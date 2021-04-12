@@ -93,32 +93,34 @@ calcRMSE(dat[,1], lasso.pred)
 plot(dat[,1], lasso.pred)
 
 pc <- prcomp(dat[,-1], scale = TRUE)
-pairs(cbind(dat[,1], pc$x[,1:9]))
+pairs(cbind(y[,1], pc$x[,1:9]))
 
 dim(pc$x)
 summary(lm(dat[, 1]~pc$x[,1:10]))
 library(car)
 avPlots(lm(dat[, 1]~pc$x[,1:10]))
 
-plot(lm(dat[, 1]~pc$x[,1:10]),1)
-pca.pred <- predict(lm(dat[, 1]~pc$x[,1:10]))
+
+lmfit<- lm(dat[, 1]~pc$x[,1:397])
+plot(lmfit,1)
+pca.pred <- predict(lmfit)
 calcRMSE(dat[,1], pca.pred)
 plot(dat[,1], pca.pred)
 
 
 
 library(pls)
-pcr.fit <- pcr(V1~dat[,-1], data=dat, scale= TRUE, validation = "CV")
+pcr.fit <- pcr(V1~., data=dat, scale= TRUE, validation = "CV")
 summary(pcr.fit)
 validationplot(pcr.fit, val.type = "MSEP")
-pcr.pred <- predict(pcr.fit, as.data.frame(dat), ncomp = 76)
+pcr.pred <- predict(pcr.fit, dat[,-1], ncomp = 356)
 calcRMSE(dat[,1], pcr.pred)
 plot(dat[,1], pcr.pred)
 
 
-pls.fit <- plsr(dat[,1] ~dat[,-1], data=as.data.frame(dat), scale= TRUE, validation = "CV")
+pls.fit <- plsr(V1 ~., data=dat, scale= TRUE, validation = "CV")
 summary(pls.fit)
 validationplot(pls.fit, val.type = "MSEP")
-pls.pred <- predict(pls.fit, dat[,-1], ncomp = 3)
+pls.pred <- predict(pls.fit, dat[,-1], ncomp = 250)
 calcRMSE(dat[,1], pls.pred)
 plot(dat[,1],pls.pred)
