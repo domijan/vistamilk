@@ -15,3 +15,22 @@ points3d(y[,1], y[,2], y[,3])
 
 matplot(t(tr), type = "l", col = 9, lty = 1)
 matplot(t(te), type = "l", col = 9, lty = 1)
+
+
+pairs(tr[,1:10])
+
+
+plot(cor(tr)[1,], col = 0)
+lines(cor(tr)[1,], col = 9)
+lines(cor(tr)[2,], col = 9)
+# matplot(cor(te), type = "l", col = 9, lty = 1)
+# 
+# 
+# library(corrplot)
+# corrplot(cor(te), method="color")
+
+# library(corrr)
+# 
+# tr %>% correlate() %>% network_plot(min_cor=0.6)
+
+library(BKPC)
