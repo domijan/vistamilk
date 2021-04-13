@@ -80,6 +80,35 @@ matplot(t(indexcor), type = "l", col = 9, lty = 1)
 
 matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
 lines(indexcor[1,]*20,lty = 3)
+
+
+dim(D2)
+D2 <- as.matrix(1-abs(cor(tr)))
+
+# image(D)
+D2[2,1]
+
+h2<- hclust(as.dist(D2), method = "ward.D2")
+dnew <- as.dendrogram(h2)
+plot(dnew)
+
+heatmap(D2,
+        Colv=as.dendrogram(h2),     
+        Rowv=as.dendrogram(h2))
+
+
+d2 <- color_branches(dnew,k=7, col = 2:8) 
+# auto-coloring 4 clusters of branches.
+# plot(d2)
+
+plot(reorder(d2, D2, method = "OLO")) 
+
+labl.cols <- cutree(d2,7)
+matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
+points(1:1060, rep(-5.8, 1060), col = labl.cols)
+
+#############################################################
+
 # First response:
 
 dat <- cbind(y[,1], tr)
