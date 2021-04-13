@@ -68,14 +68,18 @@ labl.Ave <- cutree(d2,7)
 matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
 
 
+#############################################################
+
 library(BKPC)
 ?bkpc
 
+#############################################################
 
-indexcor <- cor(cbind(y,tr), use = "pairwise.complete.obs")[1:3, -c(1:3)]
+indexcor <- abs(cor(cbind(y,tr), use = "pairwise.complete.obs"))[1:3, -c(1:3)]
 matplot(t(indexcor), type = "l", col = 9, lty = 1)
 
-
+matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
+lines(indexcor[1,]*20,lty = 3)
 # First response:
 
 dat <- cbind(y[,1], tr)
@@ -83,7 +87,7 @@ dat <- as.data.frame(dat)
 dat <- dat %>% na.omit()
 
 dat <- dat %>% filter(V1<15)
-
+dim(dat)
 # pairs(dat[,1:4])
 # dat %>% ggplot(aes(x= (V1)))+geom_histogram()
 # dat %>% ggplot(aes(x= log(V1)))+geom_histogram()
@@ -94,7 +98,7 @@ x <- model.matrix(V1 ~. , data = dat)
 
 y1 <- dat[,1]
 
-grid <- 10^seq(-3, 5, length = 100)
+grid <- 10^seq(-3, 3, length = 100)
 
 
 library(glmnet) # for the ridge regression
@@ -109,12 +113,17 @@ cv.out$lambda.min
 
 lasso.fit <- glmnet(x,y1,alpha=1, 
                     lambda = cv.out$lambda.min)
-coef(lasso.fit)
+nonzero <- which(coef(lasso.fit)[3:1062]!=0) #intercept there twice?!
 
+matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
+abline(v = nonzero) # pick values in a sensible region
+
+
+pairs(cbind(y1, dat[,1+nonzero[1:10]]),) # still perfectly correlated predictors
 
 lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat))
-calcRMSE(dat[,1], lasso.pred)
-plot(dat[,1], lasso.pred)
+calcRMSE(y1, lasso.pred)
+plot(y1, lasso.pred)
 
 pc <- prcomp(dat[,-1], scale = TRUE)
 pairs(cbind(y[,1], pc$x[,1:9]))
