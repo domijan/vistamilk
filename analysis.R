@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rgl)
+library(dendextend)
 tr <- read.csv("tr.csv") 
 te <- read.csv("te.csv") 
 
@@ -15,8 +16,8 @@ tr <- tr[, -c(1:3)]
 a <- apply(tr,2,mean)
 b <- apply(tr,2,sd)
 
-pairs(y)
-points3d(y[,1], y[,2], y[,3])
+pairs(y) # all non-normal
+# points3d(y[,1], y[,2], y[,3])
 
 
 matplot(t(tr), type = "l", col = 9, lty = 1)
@@ -43,8 +44,31 @@ tr <- scale(tr,a,b)
 te <- scale(te,a,b)
 matplot(t(tr), type = "l", col = 9, lty = 1)
 matplot(t(te), type = "l", col = 9, lty = 1)
-library(BKPC)
 
+
+D <- as.matrix(dist(tr,method="euclidean"))
+# image(D)
+
+h<- hclust(as.dist(D), method = "ward.D2")
+d <- as.dendrogram(h)
+plot(d)
+
+heatmap(D,
+        Colv=as.dendrogram(h),     
+        Rowv=as.dendrogram(h))
+
+
+d2 <- color_branches(d,k=7, col=c(2,3,5,4, 6,7,8)) 
+# auto-coloring 4 clusters of branches.
+# plot(d2)
+
+plot(reorder(d2, D, method = "OLO")) 
+
+labl.Ave <- cutree(d2,7)
+matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
+
+
+library(BKPC)
 ?bkpc
 
 
