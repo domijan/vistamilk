@@ -108,26 +108,34 @@ matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
 points(1:1060, rep(-5.8, 1060), col = labl.cols)
 
 #############################################################
+#############################################################
 
 # First response:
 
 dat <- cbind(y[,1], tr)
 dat <- as.data.frame(dat)
+dat <- dat %>% mutate(class = as.factor(labl.Ave))
 dat <- dat %>% na.omit()
 
 dat <- dat %>% filter(V1<15)
 dim(dat)
+
+ttt <- sample(397, 200)
+
+dat.tr <- dat[ttt,]
+dat.te <- dat[-ttt,]
+
 # pairs(dat[,1:4])
 # dat %>% ggplot(aes(x= (V1)))+geom_histogram()
 # dat %>% ggplot(aes(x= log(V1)))+geom_histogram()
 # qqnorm(y=(dat$V1[dat$V1<15]))
 # qqnorm(y=log(dat$V1))
 
-x <- model.matrix(V1 ~. , data = dat)
+x <- model.matrix(V1 ~. , data = dat.tr)
 
-y1 <- dat[,1]
+y1 <- dat.tr[,1]
 
-grid <- 10^seq(-3, 3, length = 100)
+grid <- 10^seq(-1, 1, length = 100)
 
 
 library(glmnet) # for the ridge regression
@@ -142,20 +150,25 @@ cv.out$lambda.min
 
 lasso.fit <- glmnet(x,y1,alpha=1, 
                     lambda = cv.out$lambda.min)
-nonzero <- which(coef(lasso.fit)[3:1062]!=0) #intercept there twice?!
+head(coef(lasso.fit))
+nonzero <- which(coef(lasso.fit)[3:1068]!=0) #intercept there twice?!
 
 matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
 abline(v = nonzero) # pick values in a sensible region
 
 
-pairs(cbind(y1, dat[,1+nonzero[1:10]]),) # still perfectly correlated predictors
 
-lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat))
-calcRMSE(y1, lasso.pred)
-plot(y1, lasso.pred)
+pairs(cbind(y1, dat.tr[,1+nonzero[1:13]]),) # still perfectly correlated predictors
 
-pc <- prcomp(dat[,-1], scale = TRUE)
-pairs(cbind(y[,1], pc$x[,1:9]))
+lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te))
+calcRMSE(dat.te[,1], lasso.pred)
+plot(dat.te[,1], lasso.pred, col = as.numeric(dat.te$class))
+abline(a = 0, b = 1)
+# plot(lasso.fit)
+#############################################################
+
+pc <- prcomp(tr[!is.na(y[,1])&y[,1]<15,], scale = TRUE)
+pairs(cbind(y1, pc$x[,1:9]), col = as.numeric(dat$class))
 
 dim(pc$x)
 summary(lm(dat[, 1]~pc$x[,1:10]))
@@ -163,26 +176,58 @@ library(car)
 avPlots(lm(dat[, 1]~pc$x[,1:10]))
 
 
-lmfit<- lm(dat[, 1]~pc$x[,1:397])
+lmfit<- lm(y[!is.na(y[,1])&y[,1]<15,1]~pc$x[,1:397])
 plot(lmfit,1)
 pca.pred <- predict(lmfit)
 calcRMSE(dat[,1], pca.pred)
-plot(dat[,1], pca.pred)
+plot(dat[,1], pca.pred, col = as.numeric(dat$class))
 
 
+
+
+pc <- prcomp(dat.tr[, 2:1061], scale = TRUE)
+pairs(cbind(dat.tr[,1], pc$x[,1:9]), col = as.numeric(dat.tr$class))
+plot(pc)
+dim(pc$x)
+summary(lm(dat.tr[, 1]~pc$x[,1:10]))
+library(car)
+avPlots(lm(dat.tr[, 1]~pc$x[,1:10]))
+
+
+lmfit<- lm(dat.tr[, 1]~pc$x[,1:200])
+plot(lmfit,1)
+
+predict
+pca.pred <- predict(lmfit, newdata = )
+calcRMSE(dat[,1], pca.pred)
+plot(dat[,1], pca.pred, col = as.numeric(dat$class))
+
+
+#############################################################
 
 library(pls)
-pcr.fit <- pcr(V1~., data=dat, scale= TRUE, validation = "CV")
+pcr.fit <- pcr(y[!is.na(y[,1])&y[,1]<15,1]~tr[!is.na(y[,1])&y[,1]<15,])
+pcr.fit <- pcr(V1~., data=dat.tr, scale= TRUE, validation = "CV")
+
 summary(pcr.fit)
 validationplot(pcr.fit, val.type = "MSEP")
-pcr.pred <- predict(pcr.fit, dat[,-1], ncomp = 356)
-calcRMSE(dat[,1], pcr.pred)
-plot(dat[,1], pcr.pred)
+pcr.pred <- predict(pcr.fit, dat.te[,-1], ncomp = 179)
+pcr.pred <- predict(pcr.fit, tr[!is.na(y[,1])&y[,1]<15,], ncomp = 356)
+# calcRMSE(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred)
+# plot(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred,  col = as.numeric(dat$class))
 
+calcRMSE(dat.te[,1], pcr.pred)
+plot(dat.te[,1], pcr.pred,  col = as.numeric(dat.te$class))
+
+#############################################################
 
 pls.fit <- plsr(V1 ~., data=dat, scale= TRUE, validation = "CV")
 summary(pls.fit)
 validationplot(pls.fit, val.type = "MSEP")
 pls.pred <- predict(pls.fit, dat[,-1], ncomp = 250)
 calcRMSE(dat[,1], pls.pred)
-plot(dat[,1],pls.pred)
+plot(dat[,1],pls.pred,  col = as.numeric(dat$class))
+
+#############################################################
+
+
