@@ -103,9 +103,20 @@ d2 <- color_branches(dnew,k=7, col = 2:8)
 
 plot(reorder(d2, D2, method = "OLO")) 
 
-labl.cols <- cutree(d2,7)
+labl.cols <- cutree(d2,15)
 matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
 points(1:1060, rep(-5.8, 1060), col = labl.cols)
+
+nonz <- NULL
+for (j in unique(labl.cols)){
+  nonz[j] <- (which(indexcor[1,]==max(indexcor[1,labl.cols==j])))
+}
+matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
+abline(v = nonz, col = 1:15) # pick values in a sensible region
+points(1:1060, rep(-5.8, 1060), col = labl.cols)
+max(indexcor[1,])
+
+pairs(tr[,nonz], col = labl.cols)
 
 #############################################################
 #############################################################
@@ -115,6 +126,7 @@ points(1:1060, rep(-5.8, 1060), col = labl.cols)
 dat <- cbind(y[,1], tr)
 dat <- as.data.frame(dat)
 dat <- dat %>% mutate(class = as.factor(labl.Ave))
+dat %>% ggplot(aes(x= V1)) + geom_histogram()
 dat <- dat %>% na.omit()
 
 dat <- dat %>% filter(V1<15)
@@ -135,7 +147,7 @@ x <- model.matrix(V1 ~. , data = dat.tr)
 
 y1 <- dat.tr[,1]
 
-grid <- 10^seq(-1, 1, length = 100)
+grid <- 10^seq(-3, 3, length = 100)
 
 
 library(glmnet) # for the ridge regression
@@ -158,7 +170,7 @@ abline(v = nonzero) # pick values in a sensible region
 
 
 
-pairs(cbind(y1, dat.tr[,1+nonzero[1:13]]),) # still perfectly correlated predictors
+pairs(cbind(y1, dat.tr[,1+nonzero]),) # still perfectly correlated predictors
 
 lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te))
 calcRMSE(dat.te[,1], lasso.pred)
@@ -194,40 +206,64 @@ library(car)
 avPlots(lm(dat.tr[, 1]~pc$x[,1:10]))
 
 
-lmfit<- lm(dat.tr[, 1]~pc$x[,1:200])
+lmfit<- lm(dat.tr[, 1]~pc$x[,1:5])
 plot(lmfit,1)
-
-predict
-pca.pred <- predict(lmfit, newdata = )
-calcRMSE(dat[,1], pca.pred)
-plot(dat[,1], pca.pred, col = as.numeric(dat$class))
+anova(lmfit)
+summary(lmfit)
+x.te <- predict(pc, dat.te[, 2:1061])
+pca.pred.poor <- as.matrix(cbind(rep(1, 200), pc$x[,1:5])) %*% as.matrix(lmfit$coef[1:6])
+pca.pred.poor.te <- as.matrix(cbind(rep(1, 199), x.te[,1:5])) %*% as.matrix(lmfit$coef[1:6])
+plot(dat.tr[,1], pca.pred.poor, col = as.numeric(dat.tr$class))
+abline(0,1)
+pca.pred <- predict(lmfit)
+calcRMSE(dat.tr[,1], pca.pred.poor)
+calcRMSE(dat.te[,1], pca.pred.poor.te)
+plot(dat.te[,1], pca.pred.poor.te, col = as.numeric(dat.te$class))
 
 
 #############################################################
 
 library(pls)
-pcr.fit <- pcr(y[!is.na(y[,1])&y[,1]<15,1]~tr[!is.na(y[,1])&y[,1]<15,])
+# pcr.fit <- pcr(y[!is.na(y[,1])&y[,1]<15,1]~tr[!is.na(y[,1])&y[,1]<15,])
 pcr.fit <- pcr(V1~., data=dat.tr, scale= TRUE, validation = "CV")
 
 summary(pcr.fit)
 validationplot(pcr.fit, val.type = "MSEP")
-pcr.pred <- predict(pcr.fit, dat.te[,-1], ncomp = 179)
-pcr.pred <- predict(pcr.fit, tr[!is.na(y[,1])&y[,1]<15,], ncomp = 356)
+pcr.pred <- predict(pcr.fit, dat.te[,-1], ncomp = 5)
+# pcr.pred <- predict(pcr.fit, tr[!is.na(y[,1])&y[,1]<15,], ncomp = 356)
 # calcRMSE(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred)
 # plot(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred,  col = as.numeric(dat$class))
 
 calcRMSE(dat.te[,1], pcr.pred)
 plot(dat.te[,1], pcr.pred,  col = as.numeric(dat.te$class))
-
+abline(a = 0, b = 1)
 #############################################################
 
-pls.fit <- plsr(V1 ~., data=dat, scale= TRUE, validation = "CV")
+pls.fit <- plsr(V1 ~., data=dat.tr, scale= TRUE, validation = "CV")
 summary(pls.fit)
 validationplot(pls.fit, val.type = "MSEP")
-pls.pred <- predict(pls.fit, dat[,-1], ncomp = 250)
-calcRMSE(dat[,1], pls.pred)
-plot(dat[,1],pls.pred,  col = as.numeric(dat$class))
+pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
+calcRMSE(dat.te[,1], pls.pred)
+plot(dat.te[,1],pls.pred,  col = as.numeric(dat.te$class))
 
 #############################################################
 
+lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz+1]))
+plot(lmfit,1)
+anova(lmfit)
+summary(lmfit)
 
+pca.pred.poor.te <- as.matrix(cbind(rep(1, 197), dat.te[, nonz+1])) %*% as.matrix(lmfit$coef)
+plot(dat.te[,1], pca.pred.poor.te , col = as.numeric(dat.te$class))
+abline(0,1)
+
+
+calcRMSE(dat.te[,1], pca.pred.poor.te)
+lmfit <- lm(V1~ wave_530+ wave_170+wave_134+wave_141+wave_162+
+            wave_193+wave_221+wave_719+wave_493+wave_596+
+            wave_602+wave_656+wave_662+wave_688+wave_713, data = dat.tr)
+library(condvis2)
+condvis(dat.tr, lmfit,  response = "V1", sectionvars="wave_530", 
+        conditionvars=c("wave_170", "wave_134", "wave_141", "wave_162",
+                        "wave_193", "wave_221", "wave_719", "wave_493", "wave_596",
+                        "wave_602", "wave_656", "wave_662", "wave_688", "wave_713"), pointColor= "class")
