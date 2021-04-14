@@ -1,3 +1,6 @@
+library(tidymodels)
+library(infotheo) # For the mutual information function
+set.seed(1979)
 library(tidyverse)
 library(rgl)
 library(dendextend)
@@ -16,7 +19,7 @@ tr <- tr[, -c(1:3)]
 a <- apply(tr,2,mean)
 b <- apply(tr,2,sd)
 
-pairs(y) # all non-normal
+pairs(log(y)) # all non-normal
 # points3d(y[,1], y[,2], y[,3])
 
 
@@ -267,3 +270,26 @@ condvis(dat.tr, lmfit,  response = "V1", sectionvars="wave_530",
         conditionvars=c("wave_170", "wave_134", "wave_141", "wave_162",
                         "wave_193", "wave_221", "wave_719", "wave_493", "wave_596",
                         "wave_602", "wave_656", "wave_662", "wave_688", "wave_713"), pointColor= "class")
+
+#############################################################
+
+
+library(ranger)
+?ranger
+
+rf.fit <- ranger(V1 ~ ., data = dat.tr, importance = "impurity")
+plot(rf.fit$variable.importance)
+pred.rf <- predict(rf.fit , data = dat.te)
+
+calcRMSE(dat.te[,1], pred.rf$predictions)
+plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class))
+abline(0,1)
+library(bartMachine)
+
+bart_machine = bartMachine(as.data.frame(dat.tr[,-1]), dat.tr[,1])
+summary(bart_machine)
+pred.bart <- predict(bart_machine, as.data.frame(dat.te[,-1]))
+calcRMSE(dat.te[,1], pred.bart)
+plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class))
+abline(0,1)
+
