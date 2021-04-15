@@ -6,6 +6,7 @@ library(dendextend)
 library(glmnet) # for the ridge regression
 library(pls)
 library(ranger)
+library(bartMachine)
 
 tr <- read.csv("tr.csv") 
 te <- read.csv("te.csv") 
@@ -154,181 +155,181 @@ ttt <- replicate(N, sample(nrow(dat), 200))
 RMSE <- matrix(0, N, 8)
 for (i in 1:N){
   j <- 1
-dat.tr <- dat[ttt[,i],]
-dat.te <- dat[-ttt[,i],]
-
-# pairs(dat[,1:4])
-# dat %>% ggplot(aes(x= (V1)))+geom_histogram()
-# dat %>% ggplot(aes(x= log(V1)))+geom_histogram()
-# qqnorm(y=(dat$V1[dat$V1<15]))
-# qqnorm(y=log(dat$V1))
-
-x <- model.matrix(V1 ~. , data = dat.tr[, -1062])
-
-y1 <- dat.tr[,1]
-
-grid <- 10^seq(-3, 3, length = 100)
-
-
-
-
-lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for lasso
-
-# plot(lasso.fit)
-
-cv.out <- cv.glmnet(x,y1,alpha=1)
-print(cv.out$lambda.min)
-
-lasso.fit <- glmnet(x,y1,alpha=1, 
-                    lambda = cv.out$lambda.min)
-# head(coef(lasso.fit))
-nonzero <- which(coef(lasso.fit)[3:1062]!=0) #intercept there twice?!
-
-# matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
-# abline(v = nonzero) # pick values in a sensible region
-
-
-
-# pairs(cbind(y1, dat.tr[,1+nonzero])) # still perfectly correlated predictors
-
-lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te[, -1062]))
-RMSE[j,i] <- calcRMSE(dat.te[,1], lasso.pred)
-j <- j + 1
-plot(dat.te[,1], lasso.pred, col = as.numeric(dat.te$class), main = "lasso")
-abline(a = 0, b = 1)
-# plot(lasso.fit)
-#############################################################
-
-# pc <- prcomp(tr[!is.na(y[,1])&y[,1]<15,], scale = TRUE)
-# pairs(cbind(y1, pc$x[,1:9]), col = as.numeric(dat$class))
-
-# dim(pc$x)
-# summary(lm(dat[, 1]~pc$x[,1:10]))
-# library(car)
-# avPlots(lm(dat[, 1]~pc$x[,1:10]))
-# 
-# 
-# lmfit<- lm(y[!is.na(y[,1])&y[,1]<15,1]~pc$x[,1:397])
-# plot(lmfit,1)
-# pca.pred <- predict(lmfit)
-# calcRMSE(dat[,1], pca.pred)
-# plot(dat[,1], pca.pred, col = as.numeric(dat$class))
-
-
-
-
-pc <- prcomp(dat.tr[, 2:1061], scale = TRUE)
-# pairs(cbind(dat.tr[,1], pc$x[,1:9]), col = as.numeric(dat.tr$class))
-# plot(pc)
-# dim(pc$x)
-# summary(lm(dat.tr[, 1]~pc$x[,1:10]))
-# library(car)
-# avPlots(lm(dat.tr[, 1]~pc$x[,1:10]))
-
-
-lmfit<- lm(dat.tr[, 1]~pc$x[,1:5])
-# plot(lmfit,1)
-# anova(lmfit)
-# summary(lmfit)
-x.te <- predict(pc, dat.te[, 2:1061])
-# pca.pred.poor <- as.matrix(cbind(rep(1, 200), pc$x[,1:5])) %*% as.matrix(lmfit$coef[1:6])
-pca.pred.poor.te <- as.matrix(cbind(rep(1, nrow(x.te)), x.te[,1:5])) %*% as.matrix(lmfit$coef[1:6])
-# plot(dat.tr[,1], pca.pred.poor, col = as.numeric(dat.tr$class))
-# abline(0,1)
-# pca.pred <- predict(lmfit)
-# calcRMSE(dat.tr[,1], pca.pred.poor)
-RMSE[j,i] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
-j <- j + 1
-plot(dat.te[,1], pca.pred.poor.te, col = as.numeric(dat.te$class), main = "PCA")
-abline(a = 0, b = 1)
-
-#############################################################
-
-# # library(pls)
-# # pcr.fit <- pcr(y[!is.na(y[,1])&y[,1]<15,1]~tr[!is.na(y[,1])&y[,1]<15,])
-# pcr.fit <- pcr(V1~., data=dat.tr, scale= TRUE, validation = "CV")
-# 
-# summary(pcr.fit)
-# validationplot(pcr.fit, val.type = "MSEP")
-# pcr.pred <- predict(pcr.fit, dat.te[,-1], ncomp = 5)
-# # pcr.pred <- predict(pcr.fit, tr[!is.na(y[,1])&y[,1]<15,], ncomp = 356)
-# # calcRMSE(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred)
-# # plot(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred,  col = as.numeric(dat$class))
-# 
-# calcRMSE(dat.te[,1], pcr.pred)
-# plot(dat.te[,1], pcr.pred,  col = as.numeric(dat.te$class))
-# abline(a = 0, b = 1)
-#############################################################
-
-pls.fit <- plsr(V1 ~., data=dat.tr[, -1062], scale= TRUE, validation = "CV")
-# summary(pls.fit)
-# validationplot(pls.fit, val.type = "MSEP")
-pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
-
-RMSE[j,i] <- calcRMSE(dat.te[,1], pls.pred)
-j <- j+ 1
-plot(dat.te[,1],pls.pred,  col = as.numeric(dat.te$class), main = "PLS")
-abline(a = 0, b = 1)
-
-#############################################################
-
-lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz+1]) )
-# plot(lmfit,1)
-# anova(lmfit)
-# summary(lmfit)
-
-x <- model.matrix(V1 ~. , data = dat.te[, c(1, nonz+1)])
-
-
-
-pca.pred.poor.te <- x %*% as.matrix(lmfit$coef)
-plot(dat.te[,1], pca.pred.poor.te , col = as.numeric(dat.te$class), main = "Uncorrelated variables")
-abline(0,1)
-
-
-RMSE[j,i] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
-j <- j+ 1
-# lmfit <- lm(V1~ wave_530+ wave_170+wave_134+wave_141+wave_162+
-#             wave_193+wave_221+wave_719+wave_493+wave_596+
-#             wave_602+wave_656+wave_662+wave_688+wave_713, data = dat.tr)
-# library(condvis2)
-# condvis(dat.tr, lmfit,  response = "V1", sectionvars="wave_530", 
-#         conditionvars=c("wave_170", "wave_134", "wave_141", "wave_162",
-#                         "wave_193", "wave_221", "wave_719", "wave_493", "wave_596",
-#                         "wave_602", "wave_656", "wave_662", "wave_688", "wave_713"), pointColor= "class")
-
-#############################################################
-
-
-
-rf.fit <- ranger(V1 ~ ., data = dat.tr, importance = "impurity")
-# plot(rf.fit$variable.importance)
-pred.rf <- predict(rf.fit , data = dat.te)
-
-RMSE[j,i] <- calcRMSE(dat.te[,1], pred.rf$predictions)
-j <- j+1
-plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
-abline(0,1)
-
-
-rf.fit <- ranger(V1 ~ ., data = dat.tr, importance = "impurity",regularization.factor = 0.2, regularization.usedepth=FALSE)
-plot(rf.fit$variable.importance)
-pred.rf <- predict(rf.fit , data = dat.te)
-
-RMSE[j,i] <- calcRMSE(dat.te[,1], pred.rf$predictions)
-j <- j+1
-plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class))
-abline(0,1)
-
-
-
-bart_machine = bartMachine(as.data.frame(dat.tr[,-1]), dat.tr[,1])
-# summary(bart_machine)
-pred.bart <- predict(bart_machine, as.data.frame(dat.te[,-1]))
-RMSE[j,i] <- calcRMSE(dat.te[,1], pred.bart)
-j <-j+1
-plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class), main = "BART")
-abline(0,1)
+  dat.tr <- dat[ttt[,i],]
+  dat.te <- dat[-ttt[,i],]
+  
+  # pairs(dat[,1:4])
+  # dat %>% ggplot(aes(x= (V1)))+geom_histogram()
+  # dat %>% ggplot(aes(x= log(V1)))+geom_histogram()
+  # qqnorm(y=(dat$V1[dat$V1<15]))
+  # qqnorm(y=log(dat$V1))
+  
+  x <- model.matrix(V1 ~. , data = dat.tr[, -1062])
+  
+  y1 <- dat.tr[,1]
+  
+  grid <- 10^seq(-3, 3, length = 100)
+  
+  
+  
+  
+  lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for lasso
+  
+  # plot(lasso.fit)
+  
+  cv.out <- cv.glmnet(x,y1,alpha=1)
+  print(cv.out$lambda.min)
+  
+  lasso.fit <- glmnet(x,y1,alpha=1, 
+                      lambda = cv.out$lambda.min)
+  # head(coef(lasso.fit))
+  nonzero <- which(coef(lasso.fit)[3:1062]!=0) #intercept there twice?!
+  
+  # matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
+  # abline(v = nonzero) # pick values in a sensible region
+  
+  
+  
+  # pairs(cbind(y1, dat.tr[,1+nonzero])) # still perfectly correlated predictors
+  
+  lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te[, -1062]))
+  RMSE[i,j] <- calcRMSE(dat.te[,1], lasso.pred)
+  j <- j + 1
+  plot(dat.te[,1], lasso.pred, col = as.numeric(dat.te$class), main = "lasso")
+  abline(a = 0, b = 1)
+  # plot(lasso.fit)
+  #############################################################
+  
+  # pc <- prcomp(tr[!is.na(y[,1])&y[,1]<15,], scale = TRUE)
+  # pairs(cbind(y1, pc$x[,1:9]), col = as.numeric(dat$class))
+  
+  # dim(pc$x)
+  # summary(lm(dat[, 1]~pc$x[,1:10]))
+  # library(car)
+  # avPlots(lm(dat[, 1]~pc$x[,1:10]))
+  # 
+  # 
+  # lmfit<- lm(y[!is.na(y[,1])&y[,1]<15,1]~pc$x[,1:397])
+  # plot(lmfit,1)
+  # pca.pred <- predict(lmfit)
+  # calcRMSE(dat[,1], pca.pred)
+  # plot(dat[,1], pca.pred, col = as.numeric(dat$class))
+  
+  
+  
+  
+  pc <- prcomp(dat.tr[, 2:1061], scale = TRUE)
+  # pairs(cbind(dat.tr[,1], pc$x[,1:9]), col = as.numeric(dat.tr$class))
+  # plot(pc)
+  # dim(pc$x)
+  # summary(lm(dat.tr[, 1]~pc$x[,1:10]))
+  # library(car)
+  # avPlots(lm(dat.tr[, 1]~pc$x[,1:10]))
+  
+  
+  lmfit<- lm(dat.tr[, 1]~pc$x[,1:5])
+  # plot(lmfit,1)
+  # anova(lmfit)
+  # summary(lmfit)
+  x.te <- predict(pc, dat.te[, 2:1061])
+  # pca.pred.poor <- as.matrix(cbind(rep(1, 200), pc$x[,1:5])) %*% as.matrix(lmfit$coef[1:6])
+  pca.pred.poor.te <- as.matrix(cbind(rep(1, nrow(x.te)), x.te[,1:5])) %*% as.matrix(lmfit$coef[1:6])
+  # plot(dat.tr[,1], pca.pred.poor, col = as.numeric(dat.tr$class))
+  # abline(0,1)
+  # pca.pred <- predict(lmfit)
+  # calcRMSE(dat.tr[,1], pca.pred.poor)
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  j <- j + 1
+  plot(dat.te[,1], pca.pred.poor.te, col = as.numeric(dat.te$class), main = "PCA")
+  abline(a = 0, b = 1)
+  
+  #############################################################
+  
+  # # library(pls)
+  # # pcr.fit <- pcr(y[!is.na(y[,1])&y[,1]<15,1]~tr[!is.na(y[,1])&y[,1]<15,])
+  # pcr.fit <- pcr(V1~., data=dat.tr, scale= TRUE, validation = "CV")
+  # 
+  # summary(pcr.fit)
+  # validationplot(pcr.fit, val.type = "MSEP")
+  # pcr.pred <- predict(pcr.fit, dat.te[,-1], ncomp = 5)
+  # # pcr.pred <- predict(pcr.fit, tr[!is.na(y[,1])&y[,1]<15,], ncomp = 356)
+  # # calcRMSE(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred)
+  # # plot(y[!is.na(y[,1])&y[,1]<15,1], pcr.pred,  col = as.numeric(dat$class))
+  # 
+  # calcRMSE(dat.te[,1], pcr.pred)
+  # plot(dat.te[,1], pcr.pred,  col = as.numeric(dat.te$class))
+  # abline(a = 0, b = 1)
+  #############################################################
+  
+  pls.fit <- plsr(V1 ~., data=dat.tr[, -1062], scale= TRUE, validation = "CV")
+  # summary(pls.fit)
+  # validationplot(pls.fit, val.type = "MSEP")
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  j <- j+ 1
+  plot(dat.te[,1],pls.pred,  col = as.numeric(dat.te$class), main = "PLS")
+  abline(a = 0, b = 1)
+  
+  #############################################################
+  
+  lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz+1]) )
+  # plot(lmfit,1)
+  # anova(lmfit)
+  # summary(lmfit)
+  
+  x <- model.matrix(V1 ~. , data = dat.te[, c(1, nonz+1)])
+  
+  
+  
+  pca.pred.poor.te <- x %*% as.matrix(lmfit$coef)
+  plot(dat.te[,1], pca.pred.poor.te , col = as.numeric(dat.te$class), main = "Uncorrelated variables")
+  abline(0,1)
+  
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  j <- j+ 1
+  # lmfit <- lm(V1~ wave_530+ wave_170+wave_134+wave_141+wave_162+
+  #             wave_193+wave_221+wave_719+wave_493+wave_596+
+  #             wave_602+wave_656+wave_662+wave_688+wave_713, data = dat.tr)
+  # library(condvis2)
+  # condvis(dat.tr, lmfit,  response = "V1", sectionvars="wave_530", 
+  #         conditionvars=c("wave_170", "wave_134", "wave_141", "wave_162",
+  #                         "wave_193", "wave_221", "wave_719", "wave_493", "wave_596",
+  #                         "wave_602", "wave_656", "wave_662", "wave_688", "wave_713"), pointColor= "class")
+  
+  #############################################################
+  
+  
+  
+  rf.fit <- ranger(V1 ~ ., data = dat.tr, importance = "impurity")
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = dat.te)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  j <- j+1
+  plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
+  abline(0,1)
+  
+  
+  rf.fit <- ranger(V1 ~ ., data = dat.tr, importance = "impurity",regularization.factor = 0.2, regularization.usedepth=FALSE)
+  plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = dat.te)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  j <- j+1
+  plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class))
+  abline(0,1)
+  
+  
+  
+  bart_machine = bartMachine(as.data.frame(dat.tr[,-1]), dat.tr[,1])
+  # summary(bart_machine)
+  pred.bart <- predict(bart_machine, as.data.frame(dat.te[,-1]))
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.bart)
+  j <-j+1
+  plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class), main = "BART")
+  abline(0,1)
 }
 i
 j
