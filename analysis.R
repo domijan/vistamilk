@@ -137,24 +137,30 @@ matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
 points(1:1060, rep(-5.8, 1060), col = labl.cols)
 
 # Pick 15 top features
-nonz <- NULL
+nonz1 <- NULL
+nonz2 <- NULL
+nonz3 <- NULL
 for (j in unique(labl.cols)){
-  nonz[j] <- (which(indexcor[1,]==max(indexcor[1,labl.cols==j])))
-}
+  nonz1[j] <- (which(indexcor[1,]==max(indexcor[1,labl.cols==j])))
+  nonz2[j] <- (which(indexcor[2,]==max(indexcor[2,labl.cols==j])))
+  nonz3[j] <- (which(indexcor[3,]==max(indexcor[3,labl.cols==j])))
+  
+  
+  }
 
 matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
-abline(v = nonz, col = 1:15) # pick values in a sensible region
+abline(v = nonz1, col = 1:15) # pick values in a sensible region
 points(1:1060, rep(-5.8, 1060), col = labl.cols)
-max(indexcor[1,])
+# max(indexcor[1,])
 
-pairs(cbind(y[,1], tr[,nonz]), col = labl.Ave)
+pairs(cbind(y[,1], tr[,nonz1]), col = labl.Ave)
 
 #############################################################
 #############################################################
 
 # First response:
 
-dat <- cbind(log(y[,1]), tr)
+dat <- cbind((y[,1]), tr)
 dat <- as.data.frame(dat)
 dat <- dat %>% mutate(class = as.factor(labl.Ave))
 dat %>% ggplot(aes(x= V1)) + geom_histogram()
@@ -317,12 +323,12 @@ for (i in 1:N){
 
   #############################################################
   
-  lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz+1]) )
+  lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz1+1]) )
   # plot(lmfit,1)
   # anova(lmfit)
   # summary(lmfit)
   
-  x <- model.matrix(V1 ~. , data = dat.te[, c(1, nonz+1)])
+  x <- model.matrix(V1 ~. , data = dat.te[, c(1, nonz1+1)])
   
   
   
@@ -407,5 +413,5 @@ for (i in 1:N){
 i
 j
 colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5", "pls6", "pls7", "pls9", "uncorr", "RF", "varRF", "Bart", "kpca")
-RMSE2 <- RMSE %>%as.data.frame()%>% pivot_longer(1:12,"ALGORITHM")
-RMSE2 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+RMSE1 <- RMSE %>%as.data.frame()%>% pivot_longer(1:13,"ALGORITHM")
+RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
