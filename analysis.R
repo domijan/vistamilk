@@ -2,7 +2,6 @@ set.seed(1979)
 library(tidyverse)
 # library(rgl)
 library(dendextend)
-
 library(glmnet) # for the ridge regression
 library(pls)
 library(ranger)
@@ -57,7 +56,8 @@ matplot(t(te), type = "l", col = 9, lty = 1)
 
 
 D <- as.matrix(dist(tr,method="euclidean"))
-# image(D)
+image(D)
+pairs(log(y))
 
 h<- hclust(as.dist(D), method = "ward.D2")
 d <- as.dendrogram(h)
@@ -81,8 +81,25 @@ matplot(t(tr), type = "l", col = labl.Ave, lty = 1) # see the 7 clusters
 #############################################################
 
 library(BKPC)
-?bkpc
+library(kernlab)
+kfunc <-  rbfdot(sigma = 0.0005)
+# kfunc <- laplacedot(sigma = 0.0001)
+# kfunc <- anovadot(sigma = 1, degree = 1)
+Ktrain2 <- kernelMatrix(kfunc, tr)
+image(Ktrain2)
 
+Ktest2 <- kernelMatrix(kfunc, te, tr)
+
+
+
+kpcKern2 <- kPCA(Ktrain2)
+
+
+# plot the data projection on the principal components
+
+pairs(kpcKern2$KPCs[ , 1 : 6], col = labl.Ave)
+KPCpred3 <- predict(kpcKern2, Ktest2)
+pairs(KPCpred3[ , 1 : 6])
 #############################################################
 
 # correlation with responses
@@ -137,13 +154,13 @@ pairs(cbind(y[,1], tr[,nonz]), col = labl.Ave)
 
 # First response:
 
-dat <- cbind(y[,1], tr)
+dat <- cbind(log(y[,1]), tr)
 dat <- as.data.frame(dat)
 dat <- dat %>% mutate(class = as.factor(labl.Ave))
 dat %>% ggplot(aes(x= V1)) + geom_histogram()
 dat <- dat %>% na.omit()
 
-dat <- dat %>% filter(V1<15)
+# dat <- dat %>% filter(V1<15)
 dim(dat)
 
 N <- 10
@@ -152,7 +169,7 @@ ttt <- replicate(N, sample(nrow(dat), 200))
 
 
 
-RMSE <- matrix(0, N, 8)
+RMSE <- matrix(0, N, 13)
 for (i in 1:N){
   j <- 1
   dat.tr <- dat[ttt[,i],]
@@ -264,13 +281,40 @@ for (i in 1:N){
   pls.fit <- plsr(V1 ~., data=dat.tr[, -1062], scale= TRUE, validation = "CV")
   # summary(pls.fit)
   # validationplot(pls.fit, val.type = "MSEP")
-  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
+  
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 3)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  j <- j+ 1
+  
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 4)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  j <- j+ 1
+  
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 5)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
   j <- j+ 1
   plot(dat.te[,1],pls.pred,  col = as.numeric(dat.te$class), main = "PLS")
   abline(a = 0, b = 1)
   
+  # summary(pls.fit)
+  # validationplot(pls.fit, val.type = "MSEP")
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  j <- j+ 1
+ 
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 7)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  j <- j+ 1
+  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 9)
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  j <- j+ 1
+
   #############################################################
   
   lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz+1]) )
@@ -330,7 +374,38 @@ for (i in 1:N){
   j <-j+1
   plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class), main = "BART")
   abline(0,1)
+  
+  
+  Ktrain2 <- kernelMatrix(kfunc, as.matrix(dat.tr[,2:1061]))
+  Ktest2 <- kernelMatrix(kfunc, as.matrix(dat.te[,2:1061]), as.matrix(dat.tr[,2:1061]))
+ kpcKern2 <- kPCA(Ktrain2)
+  
+  
+  # plot the data projection on the principal components
+  
+  # pairs(cbind(dat.tr[,1], kpcKern2$KPCs[ , 1 : 6]), col = dat.tr$class)
+  KPCpred3 <- predict(kpcKern2, Ktest2)
+  # pairs(KPCpred3[ , 1 : 6], col = dat.te$class)
+  lmfit <- lm(dat.tr[, 1]~  kpcKern2$KPCs[ , 1 : 6] )
+  # plot(lmfit,1)
+  # anova(lmfit)
+  # summary(lmfit)
+  # predict(lmfit, KPCpred3[ , 1 : 6])
+ 
+  
+  
+  
+  pca.pred.poor.te <- cbind(rep(1,nrow(KPCpred3)), KPCpred3[ , 1 : 6]) %*% as.matrix(lmfit$coef)
+  # plot(dat.te[,1], pca.pred.poor.te , col = as.numeric(dat.te$class), main = "KPCs")
+  # abline(0,1)
+  
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  j <- j+ 1
+  
 }
 i
 j
-RMSE
+colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5", "pls6", "pls7", "pls9", "uncorr", "RF", "varRF", "Bart", "kpca")
+RMSE2 <- RMSE %>%as.data.frame()%>% pivot_longer(1:12,"ALGORITHM")
+RMSE2 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
