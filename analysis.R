@@ -161,22 +161,24 @@ pairs(cbind(y[,1], tr[,nonz1]), col = labl.Ave)
 
 # First response:
 
-dat <- cbind((y[,1]), tr)
+N <- 50
+ttt <- replicate(N, sample(nrow(dat), 200))
+
+dat <- cbind(log(y[,2]), tr)
 dat <- as.data.frame(dat)
 dat <- dat %>% mutate(class = as.factor(labl.Ave))
 dat %>% ggplot(aes(x= V1)) + geom_histogram()
 dat <- dat %>% na.omit()
-nonz <- nonz1
+nonz <- nonz2
 # dat <- dat %>% filter(V1<15)
-dim(dat)
-
-N <- 50
-ttt <- replicate(N, sample(nrow(dat), 200))
+# dim(dat)
 
 
 
 
-RMSE <- matrix(0, N, 15)
+
+RMSE <- matrix(0, N, 13)
+predictions <- matrix(0,nrow(dat)-200, 12)
 for (i in 1:N){
   j <- 1
   dat.tr <- dat[ttt[,i],]
@@ -202,12 +204,12 @@ for (i in 1:N){
   # plot(lasso.fit)
   
   cv.out <- cv.glmnet(x,y1,alpha=1)
-  print(cv.out$lambda.min)
+  # print(cv.out$lambda.min)
   
   lasso.fit <- glmnet(x,y1,alpha=1, 
                       lambda = cv.out$lambda.min)
   # head(coef(lasso.fit))
-  nonzero <- which(coef(lasso.fit)[3:1062]!=0) #intercept there twice?!
+  # nonzero <- which(coef(lasso.fit)[3:1062]!=0) #intercept there twice?!
   
   # matplot(t(tr), type = "l", col = labl.Ave, lty = 1)
   # abline(v = nonzero) # pick values in a sensible region
@@ -218,7 +220,9 @@ for (i in 1:N){
   
   lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te[, -1062]))
   RMSE[i,j] <- calcRMSE(dat.te[,1], lasso.pred)
+  predictions[,j] <- lasso.pred 
   j <- j + 1
+
   # plot(dat.te[,1], lasso.pred, col = as.numeric(dat.te$class), main = "lasso")
   # abline(a = 0, b = 1)
   # plot(lasso.fit)
@@ -263,6 +267,7 @@ for (i in 1:N){
   # pca.pred <- predict(lmfit)
   # calcRMSE(dat.tr[,1], pca.pred.poor)
   RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  predictions[,j] <- pca.pred.poor.te 
   j <- j + 1
   # plot(dat.te[,1], pca.pred.poor.te, col = as.numeric(dat.te$class), main = "PCA")
   # abline(a = 0, b = 1)
@@ -292,35 +297,38 @@ for (i in 1:N){
   pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 3)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  predictions[,j] <- pls.pred 
   j <- j+ 1
   
   pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 4)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  predictions[,j] <- pls.pred 
   j <- j+ 1
   
   pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 5)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  predictions[,j] <- pls.pred 
   j <- j+ 1
   # plot(dat.te[,1],pls.pred,  col = as.numeric(dat.te$class), main = "PLS")
   # abline(a = 0, b = 1)
   
   # summary(pls.fit)
   # validationplot(pls.fit, val.type = "MSEP")
-  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
-  
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
-  j <- j+ 1
- 
-  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 7)
-  
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
-  j <- j+ 1
-  pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 9)
-  
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
-  j <- j+ 1
+  # pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 6)
+  # 
+  # RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  # j <- j+ 1
+  # 
+  # pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 7)
+  # 
+  # RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  # j <- j+ 1
+  # pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 9)
+  # 
+  # RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  # j <- j+ 1
 
   #############################################################
   
@@ -339,6 +347,7 @@ for (i in 1:N){
   
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  predictions[,j] <- pca.pred.poor.te 
   j <- j+ 1
   # lmfit <- lm(V1~ wave_530+ wave_170+wave_134+wave_141+wave_162+
   #             wave_193+wave_221+wave_719+wave_493+wave_596+
@@ -358,6 +367,7 @@ for (i in 1:N){
   pred.rf <- predict(rf.fit , data = dat.te)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  predictions[,j] <- pred.rf$predictions 
   j <- j+1
   # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
   # abline(0,1)
@@ -368,6 +378,7 @@ for (i in 1:N){
   pred.rf <- predict(rf.fit , data = dat.te)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  predictions[,j] <- pred.rf$predictions
   j <- j+1
   # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class))
   # abline(0,1)
@@ -378,6 +389,7 @@ for (i in 1:N){
   # summary(bart_machine)
   pred.bart <- predict(bart_machine, as.data.frame(dat.te[,-1]))
   RMSE[i,j] <- calcRMSE(dat.te[,1], pred.bart)
+  predictions[,j] <- pred.bart
   j <-j+1
   # plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class), main = "BART")
   # abline(0,1)
@@ -408,6 +420,7 @@ for (i in 1:N){
   
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  predictions[,j] <- pca.pred.poor.te
   j <- j+ 1
   
   
@@ -416,6 +429,7 @@ for (i in 1:N){
   pred.rf <- predict(rf.fit , data = Ktest2)
   
   RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  predictions[,j] <- pred.rf$predictions
   j <- j+1
   # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
   # abline(0,1)
@@ -426,15 +440,39 @@ for (i in 1:N){
   #Predict using SVM regression
   predYsvm = predict(modelsvm, dat.te[, -1062])
   RMSE[i,j] <- calcRMSE(dat.te[,1], predYsvm)
+  predictions[,j] <- predYsvm
   j <- j+1
   # plot(dat.te[,1], predYsvm, col = as.numeric(dat.te$class), main = "RF")
   # abline(0,1)
 
+  RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions))
 }
 i
 j
-colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5", "pls6", "pls7", "pls9", "uncorr", "RF", "varRF", "Bart", "kpca", "kernelRF", "svm")
-RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
+colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5",  "uncorr", "RF", "varRF", "Bart", "kpca", "kernelRF", "svm", "ensamble")
+
+
+RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:13,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
+
+t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+ 
+
+
+RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:13,"ALGORITHM")
+# RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
+  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
+
+t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+
+
+
+RMSE3 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:13,"ALGORITHM")
+# RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+RMSE3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
+  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
+
+t3 <- RMSE3 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
