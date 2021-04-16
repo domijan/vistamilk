@@ -177,8 +177,8 @@ nonz <- nonz2
 
 
 
-RMSE <- matrix(0, N, 13)
-predictions <- matrix(0,nrow(dat)-200, 12)
+RMSE <- matrix(0, N, 15)
+predictions <- matrix(0,nrow(dat)-200, 14)
 for (i in 1:N){
   j <- 1
   dat.tr <- dat[ttt[,i],]
@@ -423,6 +423,18 @@ for (i in 1:N){
   predictions[,j] <- pca.pred.poor.te
   j <- j+ 1
   
+ 
+ 
+  
+  rf.fit <- ranger(y = dat.tr[, 1], x =  kpcKern2$KPCs[ , 1 : 6], importance = "impurity")
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = KPCpred3[ , 1 : 6])
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  predictions[,j] <- pred.rf$predictions
+  j <- j+1
+  
+  
   
   rf.fit <- ranger(y = dat.tr[, 1], x =  Ktrain2, importance = "impurity")
   # plot(rf.fit$variable.importance)
@@ -444,15 +456,23 @@ for (i in 1:N){
   j <- j+1
   # plot(dat.te[,1], predYsvm, col = as.numeric(dat.te$class), main = "RF")
   # abline(0,1)
-
-  RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions))
+  rf.fit <- ranger(y = dat.tr[, 1], x =  cbind(kpcKern2$KPCs[ , 1 : 6], dat.tr$class), importance = "impurity")
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = cbind(KPCpred3[ , 1 : 6], dat.te$class))
+  
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  predictions[,j] <- pred.rf$predictions
+  j <- j+1
+  
+  
+  RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions[, 1:13]))
 }
 i
 j
-colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5",  "uncorr", "RF", "varRF", "Bart", "kpca", "kernelRF", "svm", "ensamble")
+colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5",  "uncorr", "RF", "varRF", "Bart", "kpca","kpcaRF", "kernelRF", "svm","kpcaClassRF", "ensamble")
 
 
-RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:13,"ALGORITHM")
+RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
@@ -461,7 +481,7 @@ t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(va
  
 
 
-RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:13,"ALGORITHM")
+RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
@@ -470,9 +490,10 @@ t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(va
 
 
 
-RMSE3 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:13,"ALGORITHM")
+RMSE3 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
-  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
+  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
+  ylab("RMSE")
 
 t3 <- RMSE3 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
