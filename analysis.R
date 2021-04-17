@@ -703,7 +703,7 @@ colnames(predictions) <- c("lasso", "pca", "pls3", "pls4","pls5",  "uncorr", "RF
 
 predictions3 <- predictions  %>%as.data.frame()%>% mutate(obs = as.factor(1:nrow(te)))%>% pivot_longer(1:14,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-predictions2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
+predictions3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
   geom_point()+ geom_line()+ theme(legend.position = "none")+
   ylab("predictions")
 
