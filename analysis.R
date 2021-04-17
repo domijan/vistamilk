@@ -158,18 +158,17 @@ pairs(cbind(y[,1], tr[,nonz1]), col = labl.Ave)
 
 #############################################################
 #############################################################
-
-# First response:
+# Each response: to pick the model
 
 N <- 50
 ttt <- replicate(N, sample(nrow(dat), 200))
 
-dat <- cbind(log(y[,2]), tr)
+dat <- cbind((y[,1]), tr)
 dat <- as.data.frame(dat)
 dat <- dat %>% mutate(class = as.factor(labl.Ave))
 dat %>% ggplot(aes(x= V1)) + geom_histogram()
 dat <- dat %>% na.omit()
-nonz <- nonz2
+nonz <- nonz1
 # dat <- dat %>% filter(V1<15)
 # dim(dat)
 
@@ -475,7 +474,8 @@ colnames(RMSE) <- c("lasso", "pca", "pls3", "pls4","pls5",  "uncorr", "RF", "var
 RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
-  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
+  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
+  ylab("RMSE")
 
 t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
  
@@ -484,7 +484,8 @@ t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(va
 RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
-  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")
+  geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
+  ylab("RMSE")
 
 t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
 
@@ -497,3 +498,216 @@ RMSE3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= 
   ylab("RMSE")
 
 t3 <- RMSE3 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+
+# USE RESULTS FROM ENSEMBLE
+
+#############################################################
+#############################################################
+# train on full training set
+
+
+
+dat <- cbind(y[,3], tr)
+dat <- as.data.frame(dat)
+dat <- dat %>% mutate(class = as.factor(labl.Ave))
+dat %>% ggplot(aes(x= V1)) + geom_histogram()
+dat <- dat %>% na.omit()
+nonz <- nonz3
+# dat <- dat %>% filter(V1<15)
+# dim(dat)
+
+
+
+
+predictions <- matrix(0,nrow(te), 14)
+
+  j <- 1
+  dat.tr <- dat
+  dat.te <- as.data.frame(te)
+
+
+  x <- model.matrix(V1 ~. , data = dat.tr[, -1062])
+  y1 <- dat.tr[,1]
+  grid <- 10^seq(-3, 3, length = 100)
+  lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for lasso
+  
+
+  
+  cv.out <- cv.glmnet(x,y1,alpha=1)
+
+  
+  lasso.fit <- glmnet(x,y1,alpha=1, 
+                      lambda = cv.out$lambda.min)
+  # head(coef(lasso.fit))
+
+  lasso.pred <- predict(lasso.fit, newx = model.matrix(~., dat.te))
+  predictions[,j] <- lasso.pred 
+  j <- j + 1
+  
+ 
+
+  
+  
+  pc <- prcomp(dat.tr[, 2:1061], scale = TRUE)
+  pairs(cbind(dat.tr[,1], pc$x[,1:6]), col = as.numeric(dat.tr[, 1062]))
+  
+  
+  lmfit<- lm(dat.tr[, 1]~pc$x[,1:6])
+
+  x.te <- predict(pc, dat.te)
+  pca.pred.poor.te <- as.matrix(cbind(rep(1, nrow(x.te)), x.te[,1:6])) %*% as.matrix(lmfit$coef[1:7])
+  predictions[,j] <- pca.pred.poor.te 
+  j <- j + 1
+ 
+  pls.fit <- plsr(V1 ~., data=dat.tr[, -1062], scale= TRUE, validation = "CV")
+
+  
+  pls.pred <- predict(pls.fit, dat.te, ncomp = 3)
+  predictions[,j] <- pls.pred 
+  j <- j+ 1
+  
+  pls.pred <- predict(pls.fit, dat.te, ncomp = 4)
+  predictions[,j] <- pls.pred 
+  j <- j+ 1
+  
+  pls.pred <- predict(pls.fit, dat.te, ncomp = 5)
+  
+  predictions[,j] <- pls.pred 
+  j <- j+ 1
+  lmfit <- lm(dat.tr[, 1]~ as.matrix(dat.tr[, nonz+1]) )
+  # plot(lmfit,1)
+  # anova(lmfit)
+  # summary(lmfit)
+  
+  x <- model.matrix(~. , data = dat.te[, nonz])
+  
+  
+  
+  pca.pred.poor.te <- x %*% as.matrix(lmfit$coef)
+
+  predictions[,j] <- pca.pred.poor.te 
+  j <- j+ 1
+ 
+  #############################################################
+  
+  
+  
+  rf.fit <- ranger(V1 ~ ., data = dat.tr[,-1062], importance = "impurity")
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = dat.te)
+  
+  predictions[,j] <- pred.rf$predictions 
+  j <- j+1
+
+  
+  
+  rf.fit <- ranger(V1 ~ ., data = dat.tr[,-1062], importance = "impurity",regularization.factor = 0.2, regularization.usedepth=FALSE)
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = dat.te)
+  
+ predictions[,j] <- pred.rf$predictions
+  j <- j+1
+
+  
+  
+  
+  bart_machine = bartMachine(as.data.frame(dat.tr[,-c(1, 1062)]), dat.tr[,1])
+  # summary(bart_machine)
+  pred.bart <- predict(bart_machine, as.data.frame(dat.te))
+  predictions[,j] <- pred.bart
+  j <-j+1
+  
+  
+  Ktrain2 <- kernelMatrix(kfunc, as.matrix(dat.tr[,2:1061]))
+  image(Ktrain2)
+  Ktest2 <- kernelMatrix(kfunc, as.matrix(dat.te), as.matrix(dat.tr[,2:1061]))
+  image(Ktest2)
+  kpcKern2 <- kPCA(Ktrain2)
+  
+  
+  # plot the data projection on the principal components
+  
+  # pairs(cbind(dat.tr[,1], kpcKern2$KPCs[ , 1 : 6]), col = dat.tr$class)
+  KPCpred3 <- predict(kpcKern2, Ktest2)
+  # pairs(KPCpred3[ , 1 : 6], col = dat.te$class)
+  lmfit <- lm(dat.tr[, 1]~  kpcKern2$KPCs[ , 1 : 6] )
+  # plot(lmfit,1)
+  # anova(lmfit)
+  # summary(lmfit)
+  # predict(lmfit, KPCpred3[ , 1 : 6])
+  
+  
+  
+  
+  pca.pred.poor.te <- cbind(rep(1,nrow(KPCpred3)), KPCpred3[ , 1 : 6]) %*% as.matrix(lmfit$coef)
+   predictions[,j] <- pca.pred.poor.te
+  j <- j+ 1
+  
+  
+  
+  
+  rf.fit <- ranger(y = dat.tr[, 1], x =  kpcKern2$KPCs[ , 1 : 6], importance = "impurity")
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = KPCpred3[ , 1 : 6])
+  predictions[,j] <- pred.rf$predictions
+  j <- j+1
+  
+  
+  
+  rf.fit <- ranger(y = dat.tr[, 1], x =  Ktrain2, importance = "impurity")
+  # plot(rf.fit$variable.importance)
+  pred.rf <- predict(rf.fit , data = Ktest2)
+  
+  predictions[,j] <- pred.rf$predictions
+  j <- j+1
+  # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
+  # abline(0,1)
+  
+  
+  modelsvm <- svm(V1~.,dat.tr[, -1062])
+  
+  #Predict using SVM regression
+  predYsvm = predict(modelsvm, dat.te)
+ predictions[,j] <- predYsvm
+ j <- j+1
+ predictions[,j] <- rowMeans(predictions[, 1:13])
+dim(predictions)
+colnames(predictions) <- c("lasso", "pca", "pls3", "pls4","pls5",  "uncorr", "RF", "varRF", "Bart", "kpca","kpcaRF", "kernelRF", "svm","ensamble")
+
+
+# predictions1 <- predictions  %>%as.data.frame()%>% mutate(obs = as.factor(1:nrow(te)))%>% pivot_longer(1:14,"ALGORITHM")
+# # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+# predictions1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
+#   geom_point()+ geom_line()+ theme(legend.position = "none")+
+#   ylab("predictions")
+# 
+# summary(y1)
+# 
+# write.csv(predictions[,14], "kappa_casein.csv", row.names = FALSE, col.names = FALSE)
+
+
+
+# 
+# predictions2 <- predictions  %>%as.data.frame()%>% mutate(obs = as.factor(1:nrow(te)))%>% pivot_longer(1:14,"ALGORITHM")
+# # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+# predictions2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
+#   geom_point()+ geom_line()+ theme(legend.position = "none")+
+#   ylab("predictions")
+# 
+# summary(exp(predictions))
+# summary(y[,2])
+# 
+# write.csv(exp(predictions[,14]), "Casein_micelle_size.csv", row.names = FALSE, col.names = FALSE)
+
+
+
+predictions3 <- predictions  %>%as.data.frame()%>% mutate(obs = as.factor(1:nrow(te)))%>% pivot_longer(1:14,"ALGORITHM")
+# RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+predictions2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
+  geom_point()+ geom_line()+ theme(legend.position = "none")+
+  ylab("predictions")
+
+summary((predictions))
+summary(y[,3])
+
+write.csv(predictions[,14], "Native_pH.csv", row.names = FALSE, col.names = FALSE)
