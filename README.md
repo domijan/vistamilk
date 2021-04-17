@@ -12,3 +12,5 @@ Predictions from an ensemble model: averages taken over predictions of:
 * linear regression with 15 waveles selected by a) clustering the wavelengths into 15 clusters and selecting the wavelength from each cluster that has the highest correlation with the response variable
 * BART from bartMachine library
 
+code at https://github.com/domijan/vistamilk
+
