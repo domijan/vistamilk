@@ -1,6 +1,6 @@
 # vistamilk
 
-Predictions from an ensemble model: averages taken over predictions of:
+Predictions from an ensemble model: averages taken over predictions from:
 * lasso from (glmnet library in R)
 * random forest (ranger library in R) with and without regularization
 * linear regression with 6 PCs with highest eigenvalues

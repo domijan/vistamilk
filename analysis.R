@@ -1,20 +1,18 @@
 set.seed(1979)
 library(tidyverse)
-# library(rgl)
 library(dendextend)
 library(glmnet) # for the ridge regression
 library(pls)
 library(ranger)
 library(bartMachine)
 library(e1071)
-
+library(BKPC)
+library(kernlab)
 tr <- read.csv("tr.csv") 
 te <- read.csv("te.csv") 
 
-# tr <- tr %>% na.omit()
 calcRMSE <- function(y, yhat){sqrt(mean((yhat - y)^2))}
-# dim(tr)
-# dim(te)
+
 
 y <- tr[,1:3]
 tr <- tr[, -c(1:3)]
@@ -24,7 +22,6 @@ a <- apply(tr,2,mean)
 b <- apply(tr,2,sd)
 
 pairs(log(y)) # all non-normal
-# points3d(y[,1], y[,2], y[,3])
 matplot(t(tr), type = "l", col = 9, lty = 1)
 matplot(t(te), type = "l", col = 9, lty = 1)
 
@@ -38,12 +35,6 @@ matplot(t(te), type = "l", col = 9, lty = 1)
 # matplot(cor(te), type = "l", col = 9, lty = 1)
 # 
 # 
-# library(corrplot)
-# corrplot(cor(te), method="color")
-
-# library(corrr)
-# 
-# tr %>% correlate() %>% network_plot(min_cor=0.6)
 
 tr <- scale(tr,a,b)
 te <- scale(te,a,b)
@@ -57,10 +48,10 @@ matplot(t(te), type = "l", col = 9, lty = 1)
 
 
 D <- as.matrix(dist(tr,method="euclidean"))
-image(D)
+# image(D)
 pairs(log(y))
 
-h<- hclust(as.dist(D), method = "ward.D2")
+h <- hclust(as.dist(D), method = "ward.D2")
 d <- as.dendrogram(h)
 plot(d)
 
@@ -76,13 +67,11 @@ d2 <- color_branches(d,k=7, col=c(2,3,5,4, 6,7,8))
 # plot(reorder(d2, D, method = "OLO")) 
 
 labl.Ave <- cutree(d2,7)
-matplot(t(tr), type = "l", col = labl.Ave, lty = 1) # see the 7 clusters
+matplot(t(tr), type = "l", col = labl.Ave, lty = 1, ylab = "training data") # see the 7 clusters
 
 
 #############################################################
 
-library(BKPC)
-library(kernlab)
 kfunc <-  rbfdot(sigma = 0.0005)
 # kfunc <- laplacedot(sigma = 0.0001)
 # kfunc <- anovadot(sigma = 1, degree = 1)
@@ -99,6 +88,11 @@ kpcKern2 <- kPCA(Ktrain2)
 # plot the data projection on the principal components
 
 pairs(kpcKern2$KPCs[ , 1 : 6], col = labl.Ave)
+
+newdat <- cbind(log(y), kpcKern2$KPCs[ , 1 : 6], labl.Ave)
+
+newdat <- newdat %>% as.data.frame() %>% na.omit() %>% mutate(labl.Ave = as.factor(labl.Ave))
+pairs(newdat[,1:9],  col = newdat[,10])
 KPCpred3 <- predict(kpcKern2, Ktest2)
 pairs(KPCpred3[ , 1 : 6])
 #############################################################
@@ -121,7 +115,8 @@ D2 <- as.matrix(1-abs(cor(tr)))
 h2<- hclust(as.dist(D2), method = "ward.D2")
 dnew <- as.dendrogram(h2)
 plot(dnew)
-
+# library(pheatmap)
+# pheatmap(tr, cluster_cols = TRUE, clustering_distance_cols = "correlation",  cutree_cols  = 15)
 heatmap(D2,
         Colv=as.dendrogram(h2),     
         Rowv=as.dendrogram(h2))
