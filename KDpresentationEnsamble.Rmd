@@ -166,9 +166,13 @@ ttt <- replicate(N, sample(nrow(dat), 130+130))
 ttr <- ttt[1:130,]
 ttv <- ttt[131:260,]
 
-RMSE <- matrix(0, N, 16)
+RMSE <- matrix(0, N, 17)
 predictions <- matrix(0,nrow(dat)-260, 13)
 predictions.tv <- matrix(0,130, 13)
+
+Coefs1 <- matrix(0,N, 13)
+Coefs2 <- matrix(0,N, 13)
+Coefs3 <- matrix(0,N, 13)
 i <- 1
 for (i in 1:N){
   j <- 1
@@ -370,6 +374,8 @@ for (i in 1:N){
 
   RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions[, 1:13]))
   
+   colnames(predictions.tv) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
+    colnames(predictions) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
   lmfit<- lm(dat.tv[, 1]~predictions.tv[, 1:13] - 1)
 # summary(  lmfit)
   
@@ -379,10 +385,34 @@ for (i in 1:N){
 # summary(  lmfit)
   
     pred.stack2 <- predict(lmfit2, predictions)
+    
+    rf.fitSG <- ranger(y = dat.tv[, 1], x = cbind( predictions.tv, dat.tv[, -c(1,1062)]), importance = "impurity")
+
+  pred.rf <- predict(rf.fitSG , data = cbind(predictions, dat.te[, -c(1,1062)]))
+
+# summary(  lmfit)
+  
+    pred.stack3 <- predict(rf.fitSG , data = cbind(predictions, dat.te[, -c(1,1062)]))$prediction
    RMSE[i,j+1] <- calcRMSE(dat.te[,1],  pred.stack)
     RMSE[i,j+2] <- calcRMSE(dat.te[,1],  pred.stack2)
+      RMSE[i,j+3] <- calcRMSE(dat.te[,1],  pred.stack3)
+    
+  Coefs1[i,] <- coef(lmfit)
+  Coefs2[i,] <- coef(lmfit2)[2:14]
+  # Coefs3[i,] <- plot(rf.fitSG$variable.importance)
 }
 
+ # matplot(t(Coefs3), type = "l")
+# matplot((Coefs1), type = "l")
+# 
+# matplot((Coefs2), type = "l")
+# 
+# pairs(Coefs2)
+# 
+# for (k in 1:13)plot(Coefs1[,k], Coefs2[,k])
+# 
+# image(t(Coefs1))
+# image(t(Coefs2))
 # plot(dat.te[,1],rowMeans(predictions[, 1:13]),  col = as.numeric(dat.te$class)+1, xlab = "kappa_casein validation set: one random split", ylab = "predicted",  main = "ensamble")
 # abline(0,1)
 
@@ -428,9 +458,9 @@ stack 2 : gives more weight to algorithms that are better predict the test set. 
 
 
 ```{r, fig.cap="kappa_casein results", echo=FALSE, message=FALSE, warning=FALSE}
-colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm",  "ensambleMA",  "ensambleStack",  "ensambleStack2")
+colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm",  "ensambleMA",  "ensambleStack",  "ensambleStack2", "ensambleStack3")
 
-RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:16,"ALGORITHM")
+RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:17,"ALGORITHM")
 
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
@@ -460,10 +490,13 @@ nonz <- nonz2
 
 
 # ====replace below]
-
-RMSE <- matrix(0, N, 16)
+RMSE <- matrix(0, N, 17)
 predictions <- matrix(0,nrow(dat)-260, 13)
 predictions.tv <- matrix(0,130, 13)
+
+Coefs1 <- matrix(0,N, 13)
+Coefs2 <- matrix(0,N, 13)
+Coefs3 <- matrix(0,N, 13)
 i <- 1
 for (i in 1:N){
   j <- 1
@@ -665,6 +698,8 @@ for (i in 1:N){
 
   RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions[, 1:13]))
   
+   colnames(predictions.tv) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
+    colnames(predictions) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
   lmfit<- lm(dat.tv[, 1]~predictions.tv[, 1:13] - 1)
 # summary(  lmfit)
   
@@ -674,26 +709,29 @@ for (i in 1:N){
 # summary(  lmfit)
   
     pred.stack2 <- predict(lmfit2, predictions)
+    
+    rf.fitSG <- ranger(y = dat.tv[, 1], x = cbind( predictions.tv, dat.tv[, -c(1,1062)]), importance = "impurity")
+
+  pred.rf <- predict(rf.fitSG , data = cbind(predictions, dat.te[, -c(1,1062)]))
+
+# summary(  lmfit)
+  
+    pred.stack3 <- predict(rf.fitSG , data = cbind(predictions, dat.te[, -c(1,1062)]))$prediction
    RMSE[i,j+1] <- calcRMSE(dat.te[,1],  pred.stack)
     RMSE[i,j+2] <- calcRMSE(dat.te[,1],  pred.stack2)
+      RMSE[i,j+3] <- calcRMSE(dat.te[,1],  pred.stack3)
+    
+  Coefs1[i,] <- coef(lmfit)
+  Coefs2[i,] <- coef(lmfit2)[2:14]
+  # Coefs3[i,] <- plot(rf.fitSG$variable.importance)
 }
 
-
-
-colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm",  "ensambleMA",  "ensambleStack",  "ensambleStack2")
-
-# RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
-#
-# # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-# RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
-#   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
-#   ylab("RMSE")
-#
-# t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm",  "ensambleMA",  "ensambleStack",  "ensambleStack2", "ensambleStack3")
 
 
 
-RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:16,"ALGORITHM")
+
+RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:17,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
@@ -721,10 +759,13 @@ nonz <- nonz3
 
 # ====replace below
 
-
-RMSE <- matrix(0, N, 16)
+RMSE <- matrix(0, N, 17)
 predictions <- matrix(0,nrow(dat)-260, 13)
 predictions.tv <- matrix(0,130, 13)
+
+Coefs1 <- matrix(0,N, 13)
+Coefs2 <- matrix(0,N, 13)
+Coefs3 <- matrix(0,N, 13)
 i <- 1
 for (i in 1:N){
   j <- 1
@@ -926,6 +967,8 @@ for (i in 1:N){
 
   RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions[, 1:13]))
   
+   colnames(predictions.tv) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
+    colnames(predictions) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
   lmfit<- lm(dat.tv[, 1]~predictions.tv[, 1:13] - 1)
 # summary(  lmfit)
   
@@ -935,14 +978,29 @@ for (i in 1:N){
 # summary(  lmfit)
   
     pred.stack2 <- predict(lmfit2, predictions)
+    
+    rf.fitSG <- ranger(y = dat.tv[, 1], x = cbind( predictions.tv, dat.tv[, -c(1,1062)]), importance = "impurity")
+
+  pred.rf <- predict(rf.fitSG , data = cbind(predictions, dat.te[, -c(1,1062)]))
+
+# summary(  lmfit)
+  
+    pred.stack3 <- predict(rf.fitSG , data = cbind(predictions, dat.te[, -c(1,1062)]))$prediction
    RMSE[i,j+1] <- calcRMSE(dat.te[,1],  pred.stack)
     RMSE[i,j+2] <- calcRMSE(dat.te[,1],  pred.stack2)
+      RMSE[i,j+3] <- calcRMSE(dat.te[,1],  pred.stack3)
+    
+  Coefs1[i,] <- coef(lmfit)
+  Coefs2[i,] <- coef(lmfit2)[2:14]
+  # Coefs3[i,] <- plot(rf.fitSG$variable.importance)
 }
 
-colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm",  "ensambleMA",  "ensambleStack",  "ensambleStack2")
+colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm",  "ensambleMA",  "ensambleStack",  "ensambleStack2", "ensambleStack3")
 
 
-RMSE3 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:16,"ALGORITHM")
+
+
+RMSE3 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:17,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 RMSE3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
@@ -958,4 +1016,4 @@ t3
 
 - code at https://github.com/domijan/vistamilk
 
-
+- remove outliers?
