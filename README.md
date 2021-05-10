@@ -1,5 +1,11 @@
 # vistamilk
 
+In this approach the training set was centered and scaled and the same transformation was applied to the test set. 
+No outliers were removed and the full set of 1060 transmittance values was used for training and prediction. Casein micelle size was log transformed.
+
+
+
+
 Predictions from an ensemble model: averages taken over predictions from:
 * lasso from (glmnet library in R)
 * random forest (ranger library in R) with and without regularization
