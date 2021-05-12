@@ -215,7 +215,7 @@ for (j in unique(labl.cols)){
 
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
 
-N <- 2
+N <- 50
 grid <- 10^seq(-3, 3, length = 100)
 RMSEFULL <- vector(mode = "list", length = 18)
 t1 <- vector(mode = "list", length = 14)
