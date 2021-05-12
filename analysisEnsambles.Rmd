@@ -203,6 +203,10 @@ for (j in unique(labl.cols)){
 # pairs(cbind(ys_tr[,1], tr[,nonz[1,]]), col = labl.Ave)
 ```
 
+
+# Fit the models
+
+
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
 
 N <- 50
