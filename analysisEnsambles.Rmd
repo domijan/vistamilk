@@ -28,6 +28,10 @@ library(bartMachine)
 library(e1071)
 library(BKPC)
 library(kernlab)
+library(caret) # For ten fold crossvalidation
+
+
+
 a <- read.csv("recleaneddataset1.csv") 
 
 
@@ -201,15 +205,17 @@ for (j in unique(labl.cols)){
 
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
 
-N <- 2
+N <- 50
 grid <- 10^seq(-3, 3, length = 100)
 RMSEFULL <- vector(mode = "list", length = 14)
 t1 <- vector(mode = "list", length = 14)
+flds <- createFolds(1:200, k = 10, list = TRUE, returnTrain = FALSE)
 
+  
 for(yind in 1:14){
   if (yind ==8) dat <- cbind(log(ys_tr[,yind]), tr)else dat <- cbind(ys_tr[,yind], tr)
-  dat <- as.data.frame(dat)
   
+  dat <- as.data.frame(dat)
   dat %>% ggplot(aes(x= V1)) + geom_histogram()
   dat <- dat %>% na.omit()
   
@@ -219,21 +225,18 @@ for(yind in 1:14){
   
   RMSE <- matrix(0, N, 15)
   predictions.te <- matrix(0,nrow(dat)-200, 14)
+  predictions.tv <- matrix(0,200, 13)
+  
+  
   for (i in 1:N){
+    
     j <- 1
     dat.tr <- dat[ttt[,i],]
     dat.te <- dat[-ttt[,i],]
 
     x <- model.matrix(V1 ~. , data = dat.tr)
-    
     y1 <- dat.tr[,1]
-    
-  
-    
     lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for lasso
-    
-    # plot(lasso.fit)
-    
     cv.out <- cv.glmnet(x,y1,alpha=1)
     # print(cv.out$lambda.min)
     
@@ -261,7 +264,7 @@ for(yind in 1:14){
     
     en.pred <- predict(en.fit, newx = model.matrix(V1 ~. , data = dat.te))
     RMSE[i,j] <- calcRMSE(dat.te[,1], en.pred)
-    predictions.te[,j] <- lasso.pred 
+    predictions.te[,j] <- en.pred 
     j <- j + 1
     
     ####################################################
@@ -408,6 +411,7 @@ for(yind in 1:14){
     
     RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions.te[, 1:14]))
   }
+  
   colnames(RMSE) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm", "ensamble MA")
   RMSEFULL[[yind]] <- RMSE
   
