@@ -74,7 +74,7 @@ matplot(t(te), type = "l", col = as.numeric(as.factor(a$Breed[-id_te]))+1, lty =
 
 D <- as.matrix(dist(tr,method="euclidean"))
 # image(D)
-pairs(log(y))
+pairs(log(ys))
 
 h <- hclust(as.dist(D), method = "ward.D2")
 d <- as.dendrogram(h)
