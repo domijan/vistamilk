@@ -215,13 +215,17 @@ for (j in unique(labl.cols)){
 
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
 
-N <- 50
+N <- 2
 grid <- 10^seq(-3, 3, length = 100)
-RMSEFULL <- vector(mode = "list", length = 14)
+RMSEFULL <- vector(mode = "list", length = 18)
 t1 <- vector(mode = "list", length = 14)
 flds <- createFolds(1:200, k = 10, list = TRUE, returnTrain = FALSE)
 
-  yind <- 1
+
+  
+  lmfitSG <- replicate(14, vector(mode = "list", length = N))
+  lmfitSG2<- replicate(14, vector(mode = "list", length = N))
+  rf.fitSG <- replicate(14, vector(mode = "list", length = N)) 
 for(yind in 1:14){
   if (yind ==8) dat <- cbind(log(ys_tr[,yind]), tr)else dat <- cbind(ys_tr[,yind], tr)
   
@@ -238,12 +242,10 @@ for(yind in 1:14){
   predictions.te <- matrix(0, nrow(dat)-200, 14)
   predictions.tv <- matrix(0, 200, 14)
  
-  lmfitSG<- vector(mode = "list", length = N)
-  lmfitSG2<- vector(mode = "list", length = N)
-  rf.fitSG <- vector(mode = "list", length = N) 
-  
+
+
   for (i in 1:N){
-    
+
 
     dat.tr.full <- dat[ttt[,i],]
     dat.te <- dat[-ttt[,i],]
@@ -420,12 +422,12 @@ for(yind in 1:14){
     
     
     
-    lmfitSG[[i]]<- lm(dat.tr.full[,1]~predictions.tv - 1) 
+    lmfitSG[[i]][[yind]]<- lm(dat.tr.full[,1]~predictions.tv - 1) 
     
-    lmfitSG2[[i]] <- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = 0, lower.limits = 0, intercept = FALSE) 
+    lmfitSG2[[i]][[yind]] <- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = 0, lower.limits = 0, intercept = FALSE) 
     # summary(  lmfit)
     
-    rf.fitSG[[i]] <- ranger(y = dat.tr.full[, 1], x = cbind( predictions.tv, dat.tr.full[, -1]), importance = "impurity")
+    rf.fitSG[[i]][[yind]] <- ranger(y = dat.tr.full[, 1], x = cbind( predictions.tv, dat.tr.full[, -1]), importance = "impurity")
     
     
     ##-----------------------------------------------------------
@@ -606,20 +608,20 @@ for(yind in 1:14){
     
     
     RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions.te[, 1:14]))
-  }
+ 
 
     colnames(predictions.te) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
     # pairs(predictions.te)
     
      
-  pred.stack <- as.matrix( predictions.te) %*% as.matrix(lmfitSG[[i]]$coef)
+  pred.stack <- as.matrix( predictions.te) %*% as.matrix(lmfitSG[[i]][[yind]]$coef)
  
- pred.stack2 <- predict(lmfitSG2[[i]], predictions.te)
+ pred.stack2 <- predict(lmfitSG2[[i]][[yind]], predictions.te)
     
 
-  pred.stackrf <- predict(rf.fitSG[[i]], data = cbind(predictions.te, dat.te[, -1]))$prediction
+  pred.stackrf <- predict(rf.fitSG[[i]][[yind]], data = cbind(predictions.te, dat.te[, -1]))$prediction
 
-  # plot(pred.stack2, pred.stackrf)
+  # plot(pred.stack2, pred.stack)
 # summary(  lmfit)
   
 
