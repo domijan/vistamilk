@@ -549,6 +549,25 @@ j <- 1
   # Coefs3[i,] <- plot(rf.fitSG$variable.importance)
 }
 
+
+zg <- t(matrix(unlist(lapply(lmfitSG, coefficients)), 13, 50))
+
+
+
+zg <- t(matrix(unlist(lapply(lapply(lmfitSG2, coef),as.matrix)), 14, 50)[2:14,])
+
+
+
+zg <- t(matrix(unlist(lapply(rf.fitSG, function(x) x$variable.importance)), 1073, 50)[1:13,])
+
+colnames(zg) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "rf+vs", "bart", "lm+kpca","rf+kpca", "rf+kernel", "svm")
+pairs(zg)
+matplot(t(zg), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble rf")
+axis(1, at = 1 : 13, labels = colnames(zg),las = 2, cex.axis=0.7)
+
+image(t(zg),  axes = FALSE)
+
+
  # matplot(t(Coefs3), type = "l")
 # matplot((Coefs1), type = "l")
 # 
