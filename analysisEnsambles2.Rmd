@@ -16,6 +16,7 @@ Compared to the competition:
 * Only a subset of columns is used
 * The transmittance values are transformed to absorbance values.
 
+
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
 rm(list = ls())
 set.seed(1979)
@@ -29,6 +30,10 @@ library(e1071)
 library(BKPC)
 library(kernlab)
 library(caret) # For ten fold crossvalidation
+```
+
+
+```{r echo = FALSE, message=FALSE, warning= FALSE}
 
 
 
@@ -658,6 +663,20 @@ for(yind in 1:14){
 ```
 
 ```{r echo = FALSE}
+
+load("analysisEnsambles2.Rdata")
 t1
+
+for(yind in 1:14){
+  RMSE <- RMSEFULL[[yind]]  
+  RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:18,"ALGORITHM")
+  # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+  p1<- RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
+    geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
+    ylab("RMSE")+ ggtitle(names(ys_tr)[yind])+
+    theme(axis.text.x=element_text(angle = 90, hjust = 0.5, vjust = 0.5))
+  
+  print(p1)
+}
 ```
 
