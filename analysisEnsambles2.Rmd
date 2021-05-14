@@ -1,12 +1,14 @@
 ---
 title: "Analysis with Ensambles add more Ensambles"
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ## Use all 14 traits
@@ -33,7 +35,7 @@ library(caret) # For ten fold crossvalidation
 ```
 
 
-```{r echo = FALSE, message=FALSE, warning= FALSE}
+```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 
 
 
@@ -92,9 +94,9 @@ te <- scale(te,me,sd)
 ```
 
 
-## Look for clusters in the training data
+<!-- ## Look for clusters in the training data -->
 
-```{r echo = FALSE, message=FALSE, warning= FALSE}
+```{r echo = FALSE, message=FALSE, warning= FALSE,  eval = FALSE}
 D <- as.matrix(dist(tr,method="euclidean"))
 # image(D)
 
@@ -125,9 +127,9 @@ matplot(t(tr), type = "l", col = labl.Ave, lty = 1, ylab = "training data") # se
 ```
 
 
-## Look for clusters in the training data
+<!-- ## Look for clusters in the training data -->
 
-```{r echo = FALSE, message=FALSE, warning= FALSE}
+```{r echo = FALSE, message=FALSE, warning= FALSE,  eval = FALSE}
 #############################################################
 
 kfunc <-  rbfdot(sigma = 0.0005)
@@ -214,11 +216,17 @@ for (j in unique(labl.cols)){
 
 
 * MA: model averaging
-* Stack: regression
-* Stack: non negative coefficients
-* Stack: RF and all the predictors
+* Stack: regression to combine predictions
+* Stack: regression with restriction to non-negative coefficients
+* Stack: RF to combine predictions and all the predictors
 
-```{r echo = FALSE, message=FALSE, warning= FALSE}
+### Crossvalidation set up
+
+* Split the data into training and testing (200 observations for the training), the rest for testing, 50 random splits. 
+
+* 10 fold cross - validation on each of the 50 training sets to train stack. 
+
+```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 
 N <- 50
 grid <- 10^seq(-3, 3, length = 100)
@@ -665,9 +673,16 @@ for(yind in 1:14){
 ```{r echo = FALSE}
 
 load("analysisEnsambles2.Rdata")
-t1
+
 
 for(yind in 1:14){
+  
+    if (yind ==8) dat <- cbind(log(ys_tr[,yind]), tr)else dat <- cbind(ys_tr[,yind], tr)
+  
+  dat <- as.data.frame(dat)
+  p<- dat %>% ggplot(aes(x= V1)) + geom_histogram() + ggtitle(names(ys_tr)[yind])
+  print(p)
+  
   RMSE <- RMSEFULL[[yind]]  
   RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:18,"ALGORITHM")
   # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
@@ -677,6 +692,35 @@ for(yind in 1:14){
     theme(axis.text.x=element_text(angle = 90, hjust = 0.5, vjust = 0.5))
   
   print(p1)
+  
+  LMcoef <- matrix(0,50, 14)
+  for (i in 1:50)LMcoef[i,] <- lmfitSG[[i]][[yind]]$coefficients
+  
+  colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
+  
+  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble LM")
+  abline(h  = 0)
+  axis(1, at = 1 : 14, labels = colnames(LMcoef),las = 2, cex.axis=0.7)
+  
+  
+  LMcoef <- matrix(0,50, 14)
+  for (i in 1:50)LMcoef[i,] <- coef(lmfitSG2[[i]][[yind]])[2:15]
+  colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
+  
+  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble Non Neg")
+  abline(h  = 0)
+  axis(1, at = 1 : 14, labels = colnames(LMcoef),las = 2, cex.axis=0.7)
+  
+  
+  LMcoef <- matrix(0,50, 14)
+  for (i in 1:50)LMcoef[i,] <- rf.fitSG[[i]][[yind]]$variable.importance[1:14]
+  colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
+  
+  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble RF")
+  abline(h  = 0)
+  axis(1, at = 1 : 14, labels = colnames(LMcoef),las = 2, cex.axis=0.7)
+  
+  print(t1[yind])
 }
 ```
 
