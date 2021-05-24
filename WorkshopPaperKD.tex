@@ -1,93 +1,17 @@
-\documentclass[a4paper,11pt]{article}
-%\renewcommand{\baselinestretch}{1.5} 
-\usepackage[utf8]{inputenc}
-\usepackage{lmodern}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath,amsthm,amsfonts,amssymb,bm}
-\usepackage{dsfont}			% indicator function
-\usepackage{enumitem}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{xcolor}
-\usepackage{authblk}
-%\usepackage[natbib,style=authoryear,backend=bibtex,maxcitenames=2,maxbibnames=99,firstinits=true]{biblatex}
-%\DeclareNameAlias{sortname}{last-first}	% surname-name order in bibliography
-\usepackage[authoryear]{natbib}
-\usepackage[right=2.5cm,left=2.5cm,top=2cm,bottom=3cm]{geometry}
-\usepackage[font={small,it}]{caption}	% the options makes the font italic in floats
-\captionsetup[table]{skip=10pt}		% these two lines separate caption from table
-\usepackage[colorlinks,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
-\usepackage{subfig}
-\usepackage{mathtools}
-\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
-\usepackage{multirow}
-\usepackage{makecell}
-\usepackage{afterpage}
-\usepackage{footnote}
 
-% independence symbol
-\newcommand{\independent}{\mathrel{\perp\mspace{-10mu}\perp}}
-
-\newcommand{\x}{\mathbf{x}}
-\newcommand{\X}{\mathbf{X}}
-\newcommand{\MU}{\bm{\mu}}
-\newcommand{\SIGMA}{\bm{\Sigma}}
-\newcommand{\OMEGA}{\bm{\Omega}}
-\newcommand{\PSI}{\bm{\Psi}}
-\newcommand{\THETA}{\bm{\Theta}}
-\newcommand{\GAMMA}{\bm{\Gamma}}
-\newcommand{\sumi}{\sum_{i=1}^N}
-\newcommand{\sumk}{\sum_{k=1}^K}
-\newcommand{\GG}{\mathcal{G}}
-\newcommand{\A}{\mathbf{A}}
-\newcommand{\PP}{\mathbf{P}}
-\newcommand{\M}{\mathbf{M}}
-\newcommand{\vbar}{\,\lvert\,}
-\DeclareMathOperator*{\argmax}{arg\,max}
-
-
-\title{ \textsc{Mid infrared spectroscopy and milk quality traits: a modelling and data analysis competition during the ``International Workshop of Spectroscopy and Chemometrics 2021''} }
-\author[1,2]{Maria Frizzarin}
-\author[3]{Antonio Bevilacqua}
-\author[3]{Bhaskar Dhariyal}
-\author[4]{Katarina Domijan}
-\author[5]{Federico Ferraccioli}
-\author[1]{Elena Hayes}
-\author[3]{Georgiana Ifrim}
-\author[6]{Agnieszka Konkolewska}
-\author[3]{Thach Le Nguyen}
-\author[2]{Uche Mbaka}
-\author[7]{Giovanna Ranzato}
-\author[3]{Ashish Singh}
-\author[8]{Marco Stefanucci}
-\author[2]{Alessandro Casa}
-\affil[1]{Teagasc, Animal \& Grassland Research and Innovation Centre, Moorepark, Ireland}
-\affil[2]{School of Mathematics and Statistics, University College Dublin, Ireland}
-\affil[3]{School of Computer Science, University College Dublin, Ireland}
-\affil[4]{Department of Mathematics and Statistics, National University of Ireland, Maynooth, Ireland}
-\affil[5]{Department of Statistical Sciences, University of Padova, Italy}
-\affil[6]{Teagasc, Crops Research Centre, Oak Park, Ireland}
-\affil[7]{Department of Animal Medicine, Production and Health, University of Padova, Italy}
-\affil[8]{Department of Economics, Business, Mathematics and Statistics, University of Trieste, Italy}
-\date{}                     %% if you don't need date to appear
-\renewcommand\Affilfont{\itshape\small}
-
-
-\begin{document}
-
-\subsection{Participant KD}
+% \subsection{Participant Katarina Domijan (KD)}
 
 In this approach the training set was centered and scaled and the same transformation was applied to the test set. 
-No outliers were removed and the full set of 1060 transmittance values was used for training and prediction. Casein micelle size was log transformed. Hierarchical clustering with distance matrix based on the absolute value of correlation between the spectra and Ward's clustering criterion was used to find groupings of the spectra. The resulting dendrogram was visualised and the transmittance values were assigned to one of fifteen clusters, see Figure \ref{fig:spectradendro}. The groupings were used to select spectra as inputs to one of the regression algorithms. 
+No outliers were removed and the full set of 1060 transmittance values was used for training and prediction. Casein micelle size was log transformed. Hierarchical clustering with distance matrix based on the absolute value of correlation between the spectra and Ward's clustering criterion was used to find groupings of the spectra. The resulting dendrogram was visualised and the transmittance values were assigned to one of fifteen clusters, see Figure \ref{fig:spectradendro}. For each cluster, a transmittance value with the highest correlation with the response variable was selected.  This formed a set of fifteen input features to one of the regression models described below. 
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.3\textwidth]{SpectraDendro.pdf}
+    \includegraphics[width=0.3\textwidth]{figs/SpectraDendro.pdf}
     \caption{Dendrogram of the spectra clustered by hierarchical clustering with distance matrix based on the absolute value of correlation between the spectra and Ward's clustering criterion.}
     \label{fig:spectradendro}
 \end{figure}
 
-The available training dataset with known trait values was initially split into 50 random splits of training (50\%) and validation (50\%) sets to select the optimal algorithm for regression. The algorithms were tuned using further cross-validation of the training sets. 
+The available training dataset with known trait values was initially split into 50 random splits of training (50\%) and validation (50\%) sets to select the optimal algorithm for regression. The algorithms were tuned using further cross-validation of the training subsets. 
 All analysis was done in R \citep{R}. 
 The following algorithms were used for regression:
 
@@ -100,13 +24,14 @@ The following algorithms were used for regression:
 \item Random forest with a Gaussian kernel in place of the transmittance values (RF+kernel) as input features.
 \item Support vector machine (SVM) for regression implemented in library \texttt{e1071} \citep{e1071}.
 \item Partial least squares (PLS) with 3, 4 and 5 components implemented in library \texttt{pls} \citep{pls}.
-\item Linear regression with fifteen wavelengths (lm + 15) selected from each cluster such that it had the highest correlation with the response variable. 
+\item Linear regression with fifteen wavelengths (lm + 15) selected from hierarchical clustering and marginal correlation with the response variable. 
 \item Bayesian additive regression trees (BART) \citep{bart} implemented in \texttt{bartMachine} library \citep{bartMachine}.
-\item Ensemble model that averaged over test set predictions from all the models described above.
+\item Post-hoc ensemble model that averaged over test set predictions from all of the models described above.
 \end{itemize}
 
 
-The predictive ability of the algorithms was evaluated based on root mean squared error (RMSE). Table \ref{table:KD} displays the average RMSE over the 50 random splits with standard deviation in brackets. The best scoring algorithm for all three traits was the ensamble model. This model was trained over the entire training set and the predictions for the test with unknown trait values set were submitted to the competition. 
+The predictive ability of the algorithms was evaluated based on root mean squared error (RMSE). Table \ref{table:KD} displays the average RMSE over the 50 random splits with standard deviation in brackets. All models considered had comparable performance. The best scoring algorithm for all three traits was the ensamble model, which outperformed the other methods by a very small margin. The ensamble model was trained over the entire training set and the predictions for the test set (69 samples) with unknown trait values were submitted to the competition. 
+The code is available at \url{https://github.com/domijan/vistamilk}
 
 
 \begin{table}[h!]
@@ -116,29 +41,23 @@ The predictive ability of the algorithms was evaluated based on root mean square
 
   Algorithm & $\kappa$ -casein & Casein micelle size & Native pH \\ 
   \hline
-ensamble & 1.48 (0.21) & 0.44 (0.03) & 0.11 (0.00) \\ 
-lasso & 1.53 (0.21) & 0.44 (0.03) & 0.12  (0.01) \\ 
-lm+15 & 1.52 (0.18) & 0.45 (0.03) & 0.12  (0.01) \\ 
-lm+PCA & 1.50 (0.20) & 0.44 (0.03) & 0.12  (0.00) \\ 
-lm+kPCA & 1.57 (0.19) & 0.44 (0.03) & 0.12  (0.00) \\ 
-PLS  & 1.50 (0.19) & 0.44 (0.03) & 0.12  (0.01) \\ 
-BART & 1.62 (0.12) & 0.47 (0.03) & 0.12 (0.01) \\ 
-RF & 1.53 (0.18) & 0.44 (0.03) & 0.12  (0.01) \\ 
-RF+VS & 1.52 (0.19) & 0.44 (0.03) & 0.12  (0.01) \\ 
-RF+kPCA & 1.57 (0.21) & 0.45 (0.03) & 0.12  (0.00) \\ 
-RF+kernel & 1.53 (0.21) & 0.45 (0.03) & 0.12  (0.01) \\ 
-SVM & 1.54 (0.21) & 0.45 (0.03) & 0.11  (0.01) \\ 
+ensamble & 1.48 (0.21) & 0.44 (0.03) & 0.115 (0.004) \\ 
+lasso & 1.53 (0.21) & 0.44 (0.03) & 0.121  (0.005) \\ 
+lm+15 & 1.52 (0.18) & 0.45 (0.03) & 0.115  (0.008) \\ 
+lm+PCA & 1.50 (0.20) & 0.44 (0.03) & 0.123  (0.003) \\ 
+lm+kPCA & 1.57 (0.19) & 0.44 (0.03) & 0.115  (0.004) \\ 
+PLS  & 1.50 (0.19) & 0.44 (0.03) & 0.122  (0.005) \\ 
+BART & 1.62 (0.12) & 0.47 (0.03) & 0.119 (0.007) \\ 
+RF & 1.53 (0.18) & 0.44 (0.03) & 0.124  (0.009) \\ 
+RF+VS & 1.52 (0.19) & 0.44 (0.03) & 0.121  (0.006) \\ 
+RF+kPCA & 1.57 (0.21) & 0.45 (0.03) & 0.119  (0.004) \\ 
+RF+kernel & 1.53 (0.21) & 0.45 (0.03) & 0.118  (0.005) \\ 
+SVM & 1.54 (0.21) & 0.45 (0.03) & 0.115  (0.005) \\ 
    \hline
 \end{tabular}
 \caption{Results from participant KD: RMSE obtained over 50 random splits of the training set into training and vlaidation. Means with standard deviations in brackets.}
 \label{table:KD}
 \end{table}
 
-
-\bibliographystyle{apalike}
-%\bibliographystyle{imsart-nameyear} 
-\bibliography{WorkshopPaperKD.bib}
-
-\end{document}
 
 
