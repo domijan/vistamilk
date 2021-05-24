@@ -712,5 +712,9 @@ for(yind in 1:3){
   
   print(t1[yind])
 }
+
+
+
+for(i in 1:50) print(sum(lmfitSG2[[i]][[yind]]$beta)-1)
 ```
 
