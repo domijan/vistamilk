@@ -736,6 +736,10 @@ RMSEFULLDF <- RMSEFULLDF%>% mutate(Split = as.factor(Split), Algorithm = as.fact
 
 ```
 
+## Fit mixed model to results: 
+
+(fixed) interaction term is significant. 
+
 ```{r echo = TRUE}
 
 
@@ -744,6 +748,8 @@ data.nest1.lmer <- lmer(RMSE ~ Algorithm*Trait + (1 | Split), RMSEFULLDF, REML =
 print(summary(data.nest1.lmer)[13])
 
 ```
+
+Using effects package, the error bars are estimate $\pm 1.96 \times$ se.
 
 ```{r echo = FALSE}
 # plot(allEffects(data.nest1.lmer), axes = list(x=list(rotate = 90)))

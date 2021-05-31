@@ -723,6 +723,9 @@ RMSEFULLDF <- RMSEFULLDF%>% mutate(Split = as.factor(Split), Algorithm = as.fact
 # TukeyHSD(data.nest1.aov)
 ```
 
+## Fit mixed model to results: 
+
+(Fixed) interaction term is significant. 
 
 ```{r echo = TRUE}
 data.nest1.lmer <- lmer(RMSE ~ Algorithm*Trait + (1 | Split), RMSEFULLDF, REML = TRUE)
@@ -733,6 +736,8 @@ print(summary(data.nest1.lmer)[13])
 # plot(allEffects(data.nest1.lmer), axes = list(x=list(rotate = 90)))
 ```
 
+
+Using effects package, the error bars are estimate $\pm 1.96 \times$ se.
 
 ```{r echo = FALSE}
 data.nest1.eff <- as.data.frame(effect("Algorithm:Trait", data.nest1.lmer))
