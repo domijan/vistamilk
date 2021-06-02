@@ -227,11 +227,11 @@ for(yind in 1:14){
   ttt <- replicate(N, sample(nrow(dat), 200))
  
   
-  RMSE <- matrix(0, N, 15)
-  predictions.te <- matrix(0,nrow(dat)-200, 14)
-  predictions.tv <- matrix(0,200, 13)
+  RMSE <- matrix(0, N, 25)
+  predictions.te <- matrix(0,nrow(dat)-200, 24)
+  predictions.tv <- matrix(0,200, 23)
   
-  
+  j<- 1
   for (i in 1:N){
     
     j <- 1
@@ -293,23 +293,15 @@ for(yind in 1:14){
     pls.fit <- plsr(V1 ~., data=dat.tr, scale= TRUE, validation = "CV")
 
     
-    pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 3)
+     for (z in 3:15){
+     pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = z)
+
+  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  predictions.te[,j] <- pls.pred
+  j <- j+ 1 
     
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
-    predictions.te[,j] <- pls.pred 
-    j <- j+ 1
-    
-    pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 4)
-    
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
-    predictions.te[,j] <- pls.pred 
-    j <- j+ 1
-    
-    pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 5)
-    
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
-    predictions.te[,j] <- pls.pred 
-    j <- j+ 1
+  }
+ 
   
     #############################################################
     
@@ -413,13 +405,13 @@ for(yind in 1:14){
     
     
     
-    RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions.te[, 1:14]))
+    RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions.te[, 1:24]))
   }
   
-  colnames(RMSE) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm", "ensamble MA")
+  colnames(RMSE) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5", "pls6", "pls7","pls8",  "pls9", "pls10","pls11", "pls12", "pls13","pls14", "pls15", "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm", "ensamble MA")
   RMSEFULL[[yind]] <- RMSE
   
-  RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
+  RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:25,"ALGORITHM")
   # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
   p1<- RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
     geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
