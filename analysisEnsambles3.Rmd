@@ -1,5 +1,5 @@
 ---
-title: "Analysis with Ensambles add more Ensambles: transmittance values"
+title: "Analysis with Ensambles: competition data"
 output:
   pdf_document: default
   html_document: default
@@ -14,9 +14,9 @@ knitr::opts_chunk$set(echo = FALSE)
 ## Use only 3 traits
 
 
-* All columns are used
+* All columns are used (1060 features).
 * The transmittance values are not transformed to absorbance values.
-* Only have responses for the training set
+* Only have responses for the training set (not test set 69 onservation) 
 
 
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
@@ -194,20 +194,25 @@ for (j in unique(labl.cols)){
 ```
 
 
+### Cross-validation set up
+
+* Split the data into training and testing (200 observations for the training), the rest for testing. 50 random splits. 
+
+* 10 fold cross - validation on each of the 50 training sets to train stack ensambles. 
+
+
 ## Add more ensamble classifiers
 
+* ensambleMA: algorithms are trained on the full training set, then use post-hoc approach of averaging over the predictions of all the algorithms of the test set. The averaged predictions are the ensambleMA predictions for the test set. Done over 50 random splits.
+
+**Stacking approaches:** Use 10-fold cross - validation of the training sets to train all algorithms.
+Fit a regression model with trait values in the training set as response and predictions from the holdout samples of the training set as predictors. Use the resulting coefficients to combine test set predictions.  Done over 50 random splits.
+
+* ensambleLM:  regression to combine predictions (using lm)
+* ensambleNonNeg: regression with restriction to non-negative coefficients (using glmnet)
+* ensambleRF: RF to combine predictions plus all the predictors (using ranger).
 
 
-* MA: model averaging
-* Stack: regression to combine predictions
-* Stack: regression with restriction to non-negative coefficients
-* Stack: RF to combine predictions and all the predictors
-
-### Crossvalidation set up
-
-* Split the data into training and testing (200 observations for the training), the rest for testing, 50 random splits. 
-
-* 10 fold cross - validation on each of the 50 training sets to train stack. 
 
 ```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 
@@ -689,13 +694,19 @@ save.image("analysisEnsambles3.Rdata")
 
 ```
 
+Note placing constrains for non-negative coefficients sometimes causes glmnet fit to fail to converge.
+
 ```{r echo = FALSE}
 
 load("analysisEnsambles3.Rdata")
 
 
 for(yind in 1:3){
+<<<<<<< HEAD
   
+=======
+  yind
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
     if (yind ==2) dat <- cbind(log(ys_tr[,yind]), tr)else dat <- cbind(ys_tr[,yind], tr)
   
   dat <- as.data.frame(dat)
@@ -705,7 +716,11 @@ for(yind in 1:3){
   RMSE <- RMSEFULL[[yind]]  
   RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:18,"ALGORITHM")
   # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
+<<<<<<< HEAD
   p1<- RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value, na.rm = TRUE)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
+=======
+  p1<- RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value,na.rm = TRUE)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
     geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
     ylab("RMSE")+ ggtitle(names(ys_tr)[yind])+
     theme(axis.text.x=element_text(angle = 90, hjust = 0.5, vjust = 0.5))
@@ -717,7 +732,7 @@ for(yind in 1:3){
   
   colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
   
-  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble LM")
+  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "Estimated coefficients", main = "ensemble LM")
   abline(h  = 0)
   axis(1, at = 1 : 14, labels = colnames(LMcoef),las = 2, cex.axis=0.7)
   
@@ -726,7 +741,7 @@ for(yind in 1:3){
   for (i in 1:50)LMcoef[i,] <- coef(lmfitSG2[[i]][[yind]])[2:15]
   colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
   
-  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble Non Neg")
+  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "Estimated coefficients", main = "ensemble Non Neg")
   abline(h  = 0)
   axis(1, at = 1 : 14, labels = colnames(LMcoef),las = 2, cex.axis=0.7)
   
@@ -735,11 +750,15 @@ for(yind in 1:3){
   for (i in 1:50)LMcoef[i,] <- rf.fitSG[[i]][[yind]]$variable.importance[1:14]
   colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls3", "pls4","pls5",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm")
   
-  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble RF")
+  matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "Estimated coefficients", main = "ensemble RF")
   abline(h  = 0)
   axis(1, at = 1 : 14, labels = colnames(LMcoef),las = 2, cex.axis=0.7)
   
   print(t1[yind])
 }
+
+
+
+for(i in 1:50) print(sum(lmfitSG2[[i]][[yind]]$beta)-1)
 ```
 

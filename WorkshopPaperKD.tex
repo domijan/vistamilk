@@ -1,0 +1,63 @@
+
+% \subsection{Participant Katarina Domijan (KD)}
+
+In this approach the training set was centered and scaled and the same transformation was applied to the test set. 
+No outliers were removed and the full set of 1060 transmittance values was used for training and prediction. Casein micelle size was log transformed. Hierarchical clustering with distance matrix based on the absolute value of correlation between the spectra and Ward's clustering criterion was used to find groupings of the spectra. The resulting dendrogram was visualised and the transmittance values were assigned to one of fifteen clusters, see Figure \ref{fig:spectradendro}. For each cluster, a transmittance value with the highest correlation with the response variable was selected.  This formed a set of fifteen input features to one of the regression models described below. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.3\textwidth]{figs/SpectraDendro.pdf}
+    \caption{Dendrogram of the spectra clustered by hierarchical clustering with distance matrix based on the absolute value of correlation between the spectra and Ward's clustering criterion.}
+    \label{fig:spectradendro}
+\end{figure}
+
+The available training dataset with known trait values was initially split into 50 random splits of training (50\%) and validation (50\%) sets to select the optimal algorithm for regression. The algorithms were tuned using further cross-validation of the training subsets. 
+All analysis was done in R \citep{R}. 
+The following algorithms were used for regression:
+
+\begin{itemize}
+\item Lasso from library \texttt{glmnet} \citep{glmnet}.
+\item Random forest (RF) from library \texttt{ranger} \citep{ranger} with and without regularization (RF + VS) \citep{regrf}.
+\item Linear regression with six principal components (lm+PCA) with largest eigenvalues as input features.
+\item Linear regression with six kernel principal components (lm+kPCA) with largest eigenvalues using Gaussian kernel implemented in library \texttt{kernlab} \citep{kernlab}.
+\item Random forest with six kernel principal components (RF+kPCA) as input features.
+\item Random forest with a Gaussian kernel in place of the transmittance values (RF+kernel) as input features.
+\item Support vector machine (SVM) for regression implemented in library \texttt{e1071} \citep{e1071}.
+\item Partial least squares (PLS) with 3, 4 and 5 components implemented in library \texttt{pls} \citep{pls}.
+\item Linear regression with fifteen wavelengths (lm + 15) selected from hierarchical clustering and marginal correlation with the response variable. 
+\item Bayesian additive regression trees (BART) \citep{bart} implemented in \texttt{bartMachine} library \citep{bartMachine}.
+\item Post-hoc ensemble model that averaged over test set predictions from all of the models described above.
+\end{itemize}
+
+
+The predictive ability of the algorithms was evaluated based on root mean squared error (RMSE). Table \ref{table:KD} displays the average RMSE over the 50 random splits with standard deviation in brackets. All models considered had comparable performance. The best scoring algorithm for all three traits was the ensamble model, which outperformed the other methods by a very small margin. The ensamble model was trained over the entire training set and the predictions for the test set (69 samples) with unknown trait values were submitted to the competition. 
+The code is available at \url{https://github.com/domijan/vistamilk}
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lrrr}
+  \hline
+
+  Algorithm & $\kappa$ -casein & Casein micelle size & Native pH \\ 
+  \hline
+ensamble & 1.48 (0.21) & 0.44 (0.03) & 0.115 (0.004) \\ 
+lasso & 1.53 (0.21) & 0.44 (0.03) & 0.121  (0.005) \\ 
+lm+15 & 1.52 (0.18) & 0.45 (0.03) & 0.115  (0.008) \\ 
+lm+PCA & 1.50 (0.20) & 0.44 (0.03) & 0.123  (0.003) \\ 
+lm+kPCA & 1.57 (0.19) & 0.44 (0.03) & 0.115  (0.004) \\ 
+PLS  & 1.50 (0.19) & 0.44 (0.03) & 0.122  (0.005) \\ 
+BART & 1.62 (0.12) & 0.47 (0.03) & 0.119 (0.007) \\ 
+RF & 1.53 (0.18) & 0.44 (0.03) & 0.124  (0.009) \\ 
+RF+VS & 1.52 (0.19) & 0.44 (0.03) & 0.121  (0.006) \\ 
+RF+kPCA & 1.57 (0.21) & 0.45 (0.03) & 0.119  (0.004) \\ 
+RF+kernel & 1.53 (0.21) & 0.45 (0.03) & 0.118  (0.005) \\ 
+SVM & 1.54 (0.21) & 0.45 (0.03) & 0.115  (0.005) \\ 
+   \hline
+\end{tabular}
+\caption{Results from participant KD: RMSE obtained over 50 random splits of the training set into training and vlaidation. Means with standard deviations in brackets.}
+\label{table:KD}
+\end{table}
+
+
+

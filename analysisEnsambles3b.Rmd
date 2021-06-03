@@ -1,8 +1,16 @@
 ---
+<<<<<<< HEAD
 title: "Analysis with Ensambles: competition data (transmittance values)"
 output:
   pdf_document: default
   html_document: default
+=======
+title: 'Analysis with Ensambles: competition data (transmittance values)'
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
 editor_options:
   chunk_output_type: console
 ---
@@ -19,6 +27,16 @@ knitr::opts_chunk$set(echo = FALSE)
 * Only have responses for the training set
 
 
+<<<<<<< HEAD
+=======
+## Compared to the older version: 
+
+* ALl traits are scaled and centered
+* PLS with optimal no of components
+* Added lasso to stack regressions (enslasso)
+
+
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
 ```{r echo = FALSE, message=FALSE, warning= FALSE}
 rm(list = ls())
 set.seed(1979)
@@ -33,6 +51,11 @@ library(BKPC)
 library(kernlab)
 library(caret) # For ten fold crossvalidation
 library(nnls)
+<<<<<<< HEAD
+=======
+library(effects)
+library(lme4)
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
 ```
 
 
@@ -206,9 +229,16 @@ for (j in unique(labl.cols)){
 
 
 * MA: model averaging
+<<<<<<< HEAD
 * Stack: regression to combine predictions
 * Stack: regression with restriction to non-negative coefficients
 * Stack: RF to combine predictions and all the predictors
+=======
+* Stack: regression
+* Stack: non negative coefficients
+* Stack: lasso
+* Stack: RF and all the predictors
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
 
 ### Crossvalidation set up
 
@@ -427,6 +457,13 @@ flds <- createFolds(1:200, k = 10, list = TRUE, returnTrain = FALSE)
     
     lmfitSG2[[i]][[yind]] <-  glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = 0, lower.limits = 0, intercept = FALSE) 
     
+<<<<<<< HEAD
+=======
+  
+    
+  
+  
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
     # b <- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = 0, lower.limits = 0, intercept = FALSE)
     # coef(b)
     # 
@@ -697,6 +734,71 @@ save.image("analysisEnsambles3b.Rdata")
 
 load("analysisEnsambles3b.Rdata")
 
+<<<<<<< HEAD
+=======
+RMSEFULLDF <- matrix(0, 850*3, 3) %>%as.data.frame()%>% mutate(trait = rep(names(ys),each = 850))
+# glimpse(RMSEFULLDF)
+
+# plot(RMSEFULLDF$Split[1:900])
+
+for(yind in 1:3){  
+  a <- (yind-1)*850+1
+  b <- yind*850
+  d<- (yind-1)*50+1
+  e<- yind*50
+  RMSE <- RMSEFULL[[yind]]  
+  RMSE1 <- RMSE  %>%as.data.frame()%>% mutate(split = d:e)%>% pivot_longer(1:17,"ALGORITHM")
+  RMSEFULLDF[a:b,1:3]<- RMSE1
+}
+names(RMSEFULLDF) <- c("Split", "Algorithm", "RMSE", "Trait")
+
+RMSEFULLDF <- RMSEFULLDF%>% mutate(Split = as.factor(Split), Algorithm = as.factor(Algorithm), Trait = as.factor(Trait))
+
+# data.nest1.aov <- aov(RMSE ~ Algorithm *Trait + Split, RMSEFULLDF)
+# anova(data.nest1.aov)
+# TukeyHSD(data.nest1.aov)
+
+```
+
+## Fit mixed model to results: 
+
+(fixed) interaction term is significant. 
+
+```{r echo = TRUE}
+
+
+data.nest1.lmer <- lmer(RMSE ~ Algorithm*Trait + (1 | Split), RMSEFULLDF, REML = TRUE)
+
+print(summary(data.nest1.lmer)[13])
+
+```
+
+Using effects package, the error bars are estimate $\pm 1.96 \times$ se.
+
+```{r echo = FALSE}
+# plot(allEffects(data.nest1.lmer), axes = list(x=list(rotate = 90)))
+
+data.nest1.eff <- as.data.frame(effect("Algorithm:Trait", data.nest1.lmer))
+data.nest1.eff <- data.nest1.eff %>% mutate(nonneg = as.numeric(Algorithm=="ensNonNeg"))
+
+# data.nest1.eff$nonneg
+# glimpse(data.nest1.eff )
+data.nest1.eff %>% ggplot( aes(y = fit, x = Trait, group = Algorithm, colour = Algorithm)) + geom_pointrange(aes(ymin = lower,
+    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 0))+geom_line(aes(alpha = nonneg), show.legend = FALSE)
+```
+
+```{r echo = FALSE, fig.height=14, fig.width = 10}
+data.nest1.eff %>% ggplot( aes(y = fit, x =  Algorithm)) + geom_errorbar(aes(ymin = lower,
+    ymax = upper, colour = nonneg), show.legend = FALSE) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90))+
+  facet_grid(Trait ~ .) 
+
+data.nest1.eff <- as.data.frame(Effect("Algorithm", data.nest1.lmer))
+```
+
+```{r echo = FALSE}
+data.nest1.eff %>% ggplot( aes(y = fit, x = Algorithm)) + geom_pointrange(aes(ymin = lower,
+    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90)) + geom_point(size = 3, pch = 1)
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
 
 for(yind in 1:3){
   
@@ -758,12 +860,42 @@ for(yind in 1:3){
   
 
   
+<<<<<<< HEAD
   print(t1[yind])
   
   RMSE1 <- RMSE1 %>% mutate(split = as.factor(split), ALGORITHM = as.factor(ALGORITHM))
 # glimpse(RMSE1)
 b <- aov(value~ split+ ALGORITHM, data = RMSE1)
 anova(b) %>% print()
+=======
+  # print(t1[yind])
+  
+
+  RMSE1 <- RMSE1 %>% mutate(Split = as.factor(split), Algorithm = as.factor(ALGORITHM))
+# glimpse(RMSE1)
+# b <- aov(value~ split+ ALGORITHM, data = RMSE1)
+# anova(b) %>% print()
+
+
+
+data.nest1.lmer <- lmer(value ~ Algorithm + (1 | Split), RMSE1, REML = TRUE)
+
+print(summary(data.nest1.lmer)[13])
+
+
+data.nest1.eff <- as.data.frame(Effect("Algorithm", data.nest1.lmer))
+
+
+
+p <- data.nest1.eff %>% ggplot( aes(y = fit, x = Algorithm)) + geom_pointrange(aes(ymin = lower,
+    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90)) + geom_point(size = 3, pch = 1)+ ggtitle(names(ys_tr)[yind])
+
+print(p)
+
+# glimpse(RMSE1)
+# b <- aov(value~ split+ ALGORITHM, data = RMSE1)
+# anova(b) %>% print()
+>>>>>>> 7ab471bbfc54b09249cbdfa3a4412dde5768aea7
 # TukeyHSD(b)$ALGORITHM[,4][TukeyHSD(b)$ALGORITHM[,4]<0.05] %>% t() %>%t()
 
 # plot(TukeyHSD(b))
