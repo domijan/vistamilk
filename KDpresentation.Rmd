@@ -370,7 +370,8 @@ RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= 
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
   ylab("RMSE")
 
-t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value))
+%>% arrange(desc(meanv))
 
 
 
@@ -624,7 +625,9 @@ RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= 
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
   ylab("RMSE")
 
-t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) 
+
+%>% arrange(desc(meanv))
 #
 #
 #
@@ -881,11 +884,44 @@ RMSE3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= 
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
   ylab("RMSE")
 
-t3 <- RMSE3 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+t3 <- RMSE3 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) 
+
+# %>% arrange(desc(meanv))
 
 
+# zg <- cbind(t1,t2, t3)
+# zg <- zg[, -c(4,7)]
+# names(zg) <- c("Algorithm", "kappa_casein: mean", "kappa_casein: sd", "Casein_micelle_size: mean", "Casein_micelle_size: sd", "Native_pH: mean", "Native_pH: sd")
+# library(xtable)
+# xtable(zg, digits = 2)
 ```
 
+<!-- % latex table generated in R 4.0.3 by xtable 1.8-4 package -->
+<!-- % Tue May 18 15:27:01 2021 -->
+<!-- \begin{table}[ht] -->
+<!-- \centering -->
+<!-- \begin{tabular}{rlrrrrrr} -->
+<!--   \hline -->
+<!--  & Algorithm & kappa\_casein: mean & kappa\_casein: sd & Casein\_micelle\_size: mean & Casein\_micelle\_size: sd & Native\_pH: mean & Native\_pH: sd \\  -->
+<!--   \hline -->
+<!-- 1 & bart & 1.621 & 0.124 & 0.469 & 0.030 & 0.119 & 0.006 \\  -->
+<!--   2 & ensamble & 1.479 & 0.211 & 0.436 & 0.032 & 0.115 & 0.004 \\  -->
+<!--   3 & lasso & 1.534 & 0.211 & 0.442 & 0.030 & 0.121 & 0.006 \\  -->
+<!--   4 & lm+15 & 1.519 & 0.180 & 0.452 & 0.028 & 0.115 & 0.008 \\  -->
+<!--   5 & lm+kpca & 1.569 & 0.190 & 0.440 & 0.031 & 0.115 & 0.004 \\  -->
+<!--   6 & lm+pca & 1.503 & 0.202 & 0.438 & 0.030 & 0.123 & 0.003 \\  -->
+<!--   7 & pls3 & 1.543 & 0.198 & 0.440 & 0.028 & 0.131 & 0.007 \\  -->
+<!--   8 & pls4 & 1.502 & 0.191 & 0.449 & 0.027 & 0.122 & 0.005 \\  -->
+<!--   9 & pls5 & 1.580 & 0.157 & 0.476 & 0.019 & 0.125 & 0.006 \\  -->
+<!--   10 & rf & 1.529 & 0.178 & 0.444 & 0.030 & 0.124 & 0.008 \\  -->
+<!--   11 & rf+kernel & 1.532 & 0.206 & 0.452 & 0.031 & 0.118 & 0.005 \\  -->
+<!--   12 & rf+kpca & 1.566 & 0.207 & 0.452 & 0.031 & 0.119 & 0.004 \\  -->
+<!--   13 & rf+kpca+class & 1.562 & 0.211 & 0.451 & 0.031 & 0.118 & 0.004 \\  -->
+<!--   14 & rf+vs & 1.519 & 0.192 & 0.440 & 0.030 & 0.121 & 0.006 \\  -->
+<!--   15 & svm & 1.540 & 0.212 & 0.454 & 0.032 & 0.115 & 0.005 \\  -->
+<!--    \hline -->
+<!-- \end{tabular} -->
+<!-- \end{table} -->
 
 ## Thank you
 
