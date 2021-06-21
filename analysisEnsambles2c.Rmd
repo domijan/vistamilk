@@ -45,7 +45,7 @@ library(gbm)
 
 ```
 
-```{r echo = FALSE, message=FALSE, warning= FALSE, eval = TRUE}
+```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 
 a <- read.csv("recleaneddataset1.csv") 
 
@@ -114,7 +114,7 @@ te <- scale(te,me,sd)
 
 <!-- ## Look for clusters in the training data: rows -->
 
-```{r echo = FALSE, message=FALSE, warning= FALSE, eval = TRUE}
+```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 D <- as.matrix(dist(tr,method="euclidean"))
 # image(D)
 
@@ -147,7 +147,7 @@ d2 <- color_branches(d,k=7, col=c(2,3,5,4, 6,7,8))
 
 <!-- ## Look for clusters in the training data: columns -->
 
-```{r echo = FALSE, message=FALSE, warning= FALSE, eval = TRUE}
+```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 #############################################################
 
 kfunc <-  rbfdot(sigma = 0.0005)
@@ -245,7 +245,7 @@ for (j in unique(labl.cols)){
 * 10 fold cross - validation on each of the 50 training sets to train stack. 
 
 
-```{r echo = FALSE, message=FALSE, warning= FALSE, eval = TRUE}
+```{r echo = FALSE, message=FALSE, warning= FALSE, eval = FALSE}
 
 N <- 50
 grid <- 10^seq(-3, 3, length = 100)
@@ -798,7 +798,7 @@ for(yind in 1:14){
 
 
 
-save.image("analysisEnsambles2c.Rdata")
+save.image("analysisEnsambles2c2021.Rdata")
 
 
 
@@ -807,16 +807,16 @@ save.image("analysisEnsambles2c.Rdata")
 ```
 
 ```{r echo = FALSE}
-load("analysisEnsambles2c.Rdata")
+load("analysisEnsambles2c2021.Rdata")
 
-RMSEFULLDF <- matrix(0, 850*14, 3) %>%as.data.frame()%>% mutate(trait = rep(names(ys),each = 850))
+RMSEFULLDF <- matrix(0, 1000*14, 3) %>%as.data.frame()%>% mutate(trait = rep(names(ys),each = 1000))
 # glimpse(RMSEFULLDF)
 
 # plot(RMSEFULLDF$Split[1:900])
 
 for(yind in 1:14){  
-  a <- (yind-1)*850+1
-  b <- yind*850
+  a <- (yind-1)*1000+1
+  b <- yind*1000
   d<- (yind-1)*50+1
   e<- yind*50
   RMSE <- RMSEFULL[[yind]]  
@@ -825,7 +825,7 @@ for(yind in 1:14){
 }
 names(RMSEFULLDF) <- c("Split", "Algorithm", "RMSE", "Trait")
 
-RMSEFULLDF <- RMSEFULLDF%>% mutate(Split = as.factor(Split), Algorithm = as.factor(Algorithm), Trait = as.factor(Trait))
+RMSEFULLDF <- RMSEFULLDF %>% mutate(Split = as.factor(Split), Algorithm = as.factor(Algorithm), Trait = as.factor(Trait))
 
 # data.nest1.aov <- aov(RMSE ~ Algorithm *Trait + Split, RMSEFULLDF)
 # anova(data.nest1.aov)
@@ -855,7 +855,7 @@ data.nest1.eff <- data.nest1.eff %>% mutate(nonneg = as.numeric(Algorithm=="ensN
 # data.nest1.eff$nonneg
 # glimpse(data.nest1.eff )
 data.nest1.eff %>% ggplot( aes(y = fit, x = Trait, group = Algorithm, colour = Algorithm)) + geom_pointrange(aes(ymin = lower,
-    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90))+geom_line(aes(alpha = nonneg), show.legend = FALSE)
+    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90))+geom_line(aes(alpha = nonneg), show.legend = FALSE) +ylim(0.5,1.4)
 ```
 
 
@@ -873,7 +873,7 @@ data.nest1.eff <- as.data.frame(Effect("Algorithm", data.nest1.lmer))
 
 
 data.nest1.eff %>% ggplot( aes(y = fit, x = Algorithm)) + geom_pointrange(aes(ymin = lower,
-    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90)) + geom_point(size = 3, pch = 1)
+    ymax = upper)) + scale_y_continuous("RMSE") + theme(axis.text.x = element_text(angle = 90)) + geom_point(size = 3, pch = 1) +ylim(0.8,0.95)
 # 
 # library(sjPlot)
 # plot_model(data.nest1.lmer, type = "eff", terms = "Algorithm")
@@ -919,7 +919,7 @@ for(yind in 1:14){
    # hist(rowSums(LMcoef))
   
   LMcoef <- matrix(0,50, 15)
-  for (i in 1:50)LMcoef[i,] <- coef(nonneg.fit.SG[[i]][[yind]])[2:13]
+  for (i in 1:50)LMcoef[i,] <- coef(nonneg.fit.SG[[i]][[yind]])[2:16]
   colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls", "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm",  "ppr", "brnn", "gbm")
   
   matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble Non Neg")
@@ -929,7 +929,7 @@ for(yind in 1:14){
    # hist(rowSums(LMcoef))
   
    LMcoef <- matrix(0,50, 15)
-  for (i in 1:50)LMcoef[i,] <- coef(lasso.fit.SG[[i]][[yind]])[2:13]
+  for (i in 1:50)LMcoef[i,] <- coef(lasso.fit.SG[[i]][[yind]])[2:16]
   colnames(LMcoef) <- c("lasso", "elastic net", "pca", "pls", "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm",  "ppr", "brnn", "gbm")
   
   matplot(t(LMcoef), type = "l", lty = 1, xaxt = "n", col = 9, ylab = "coef", main = "ensemble Lasso")

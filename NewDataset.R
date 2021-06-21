@@ -17,7 +17,7 @@ library(brnn)
 library(gbm)
 library(haven)
 
-calcRMSE <- function(y, yhat){sqrt(mean((yhat - y)^2))}
+
 
 mixed.data <- read_sas("dataset_for_mixed_model.sas7bdat")
 mixed.data%>% glimpse()
@@ -113,16 +113,23 @@ dim(dat)
 nonzy <- nonz
 
 save(dat, nonzy, file="temp.RData")
-rm(list=ls())
-load(file="temp.RData")
-pls.fit <- plsr(ys ~., data=dat, scale= TRUE, validation = "none")
 
-N <- 2
+########################################################################
+# Start here
+rm(list=ls())
+# load(file="temp.RData")
+# rm(list=ls())
+load(file="First2.RData")
+set.seed(1979)
+source("Load_libraries.R")
+
+
+N <- 6
 grid <- 10^seq(-3, 3, length = 20)
-RMSEFULL <- vector(mode = "list", length = 20)
+RMSEFULL <- vector(mode = "list", length = 15)
 t1 <- vector(mode = "list", length = 1)
-names(t1)<- "delta_bcs"
-flds <- createFolds(1:20000, k = 5, list = TRUE, returnTrain = FALSE)
+names(t1) <- "delta_bcs"
+flds <- createFolds(1:20000, k = 3, list = TRUE, returnTrain = FALSE)
 
 
 # pls.pc <-c(4, 6, 5, 4, 3, 6, 15, 4, 10, 15,8, 4,8,7)
@@ -136,30 +143,30 @@ lasso.fit.SG <- vector(mode = "list", length = N)
 
 
   
-  set.seed(1979)
-  ttt <- replicate(N, sample(nrow(dat), 20000))
+set.seed(1979)
+ttt <- replicate(N, sample(nrow(dat), 20000))
+
+
+RMSE <- matrix(0, N, 15)
+predictions.te <- matrix(0, nrow(dat) - 20000, 10)
+predictions.tv <- matrix(0, 20000, 10)
+
+start_time <- Sys.time()
   
-  
-  RMSE <- matrix(0, N, 20)
-  predictions.te <- matrix(0, nrow(dat)-20000, 15)
-  predictions.tv <- matrix(0, 20000, 15)
-  
-  
-  
-  for (i in 1:N){
+for (i in 6){
     
     
     dat.tr.full <- dat[ttt[,i],]
     dat.te <- dat[-ttt[,i],]
-    
-    for(l in 1:5){
+    # start_time <- Sys.time()    
+    for(l in 1:3){
       dat.tr <- dat.tr.full[-flds[[l]],]
       dat.tv <- dat.tr.full[flds[[l]],]
       
       j <- 1
       x <- model.matrix(ys ~. , data = dat.tr)
       y1 <- dat.tr[,1]
-      
+       
       set.seed(1951)
       lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for lasso
       cv.out <- cv.glmnet(x,y1,alpha=1, nfolds = 5)
@@ -193,7 +200,7 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       
       
       en.pred <- predict(en.fit, newx = model.matrix(ys ~. , data = dat.tv))
-      # plot(dat.tv[,1], en.pred,  main = "lasso")
+      # plot(dat.tv[,1], en.pred,  main = "en")
       # abline(a = 0, b = 1)
       # coef(en.fit)
       predictions.tv[flds[[l]] ,j] <- en.pred 
@@ -205,12 +212,12 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       set.seed(1951)
       pc <- prcomp(dat.tr[, 2:ncol(dat.tr)], scale = TRUE)
       
-      pca.lm.fit <- lm(dat.tr[, 1]~pc$x[,1:50])
+      pca.lm.fit <- lm(dat.tr[, 1]~pc$x[,1:100])
       # summary(pca.lm.fit)
       # pairs(pc$x[,1:5])
       x.tv <- predict(pc, dat.tv[, 2:ncol(dat.tr)])
       # pca.pred.poor <- as.matrix(cbind(rep(1, 20000), pc$x[,1:5])) %*% as.matrix(pca.lm.fit$coef[1:6])
-      pca.pred <- as.matrix(cbind(rep(1, nrow(x.tv)), x.tv[,1:50])) %*% as.matrix(pca.lm.fit$coef[1:51])
+      pca.pred <- as.matrix(cbind(rep(1, nrow(x.tv)), x.tv[,1:100])) %*% as.matrix(pca.lm.fit$coef[1:101])
       
       predictions.tv[flds[[l]] ,j] <- pca.pred 
       j <- j + 1
@@ -221,18 +228,22 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       
       set.seed(1951)
       
-      save.image(file="temp.RData")
-      rm(list=ls())
-      load(file="temp.RData")
+      # save.image(file="temp.RData")
+      # rm(list=ls())
+      # load(file="temp.RData")
       pls.fit <- plsr(ys ~., data=dat.tr, scale= TRUE, validation = "none")
       
-      bl <- 1:100
-      for (i in 1:100) predict(pls.fit, dat.tv[,-1], ncomp = 5)
-      plot(1:100, predict(pls.fit, dat.tv[,-1], ncomp = 5))
-      pls.pred <- predict(pls.fit, dat.tv[,-1], ncomp = 55)
-      calcRMSE(dat.tv[,1], pls.pred)
-      plot(dat.tv[,1], pls.pred,  main = "PCA")
-      abline(a = 0, b = 1)
+      # bl <- 1:100
+      # rmse <-NULL
+      # for (i in 1:100) {
+      #   prl<-predict(pls.fit, dat.tv[,-1], ncomp = i)
+      #   rmse[i] <- calcRMSE(dat.tv[,1], prl)
+      #   }
+      # plot(1:100, rmse)
+   pls.pred <- predict(pls.fit, dat.tv[,-1], ncomp = 30)
+      # calcRMSE(dat.tv[,1], pls.pred)
+      # plot(dat.tv[,1], pls.pred,  main = "PLS")
+      # abline(a = 0, b = 1)
       predictions.tv[flds[[l]] ,j] <- pls.pred 
       j <- j+ 1
       
@@ -243,6 +254,8 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       x <- model.matrix(ys ~. , data = dat.tv[, c(1, nonzy+1)])
       lm.pred <- x %*% as.matrix(lm.fit$coef)
       
+      # plot(dat.tv[,1], lm.pred,  main = "lm15")
+      # abline(a = 0, b = 1)
       
       predictions.tv[flds[[l]] ,j] <- lm.pred
       j <- j+ 1
@@ -254,69 +267,72 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       # plot(rf.fit$variable.importance)
       pred.rf <- predict(rf.fit , data = dat.tv)
       
+      # plot(dat.tv[,1], pred.rf$predictions ,  main = "rf")
+      # abline(a = 0, b = 1)
       predictions.tv[flds[[l]] ,j] <- pred.rf$predictions 
       j <- j+1
       
-      ####################################################
-      set.seed(1951)      
-      rf.vs.fit <- ranger(ys ~ ., data = dat.tr, importance = "impurity", regularization.factor = 0.2, regularization.usedepth=FALSE)
-      # plot(rf.fit$variable.importance)
-      pred.vs.rf <- predict(rf.vs.fit , data = dat.tv)
-      
-      predictions.tv[flds[[l]] ,j] <- pred.vs.rf$predictions
-      j <- j+1
-      # plot(dat.tv[,1], pred.rf$predictions, col = as.numeric(dat.tv$class))
-      # abline(0,1)
-      
-      ####################################################
-      set.seed(1951)
-      bart.fit <- bartMachine(as.data.frame(dat.tr[,-1]), dat.tr[,1], verbose = FALSE)
-      # summary(bart.fit)
-      pred.bart <- predict(bart.fit, as.data.frame(dat.tv[,-1]))
-      predictions.tv[flds[[l]] ,j] <- pred.bart
-      j <-j+1
-      # plot(dat.tv[,1], pred.bart, col = as.numeric(dat.tv$class), main = "BART")
-      # abline(0,1)
+      # ####################################################
+      # set.seed(1951)      
+      # rf.vs.fit <- ranger(ys ~ ., data = dat.tr, importance = "impurity", regularization.factor = 0.2, regularization.usedepth=FALSE)
+      # # plot(rf.fit$variable.importance)
+      # pred.vs.rf <- predict(rf.vs.fit , data = dat.tv)
+      # plot(dat.tv[,1], pred.vs.rf$predictions ,  main = "vsrf")
+      # abline(a = 0, b = 1)      
+      # predictions.tv[flds[[l]] ,j] <- pred.vs.rf$predictions
+      # j <- j+1
+
       
       ####################################################
-      set.seed(1951)        
-      Ktrain <- kernelMatrix(kfunc, as.matrix(dat.tr[,2:ncol(dat.tr)]))
-      Kvalid <- kernelMatrix(kfunc, as.matrix(dat.tv[,2:ncol(dat.tr)]), as.matrix(dat.tr[,2:ncol(dat.tr)]))
-      kpcTrain <- kPCA(Ktrain)
+      # set.seed(1951)
+      # bart.fit <- bartMachine(as.data.frame(dat.tr[,-1]), dat.tr[,1], verbose = FALSE)
+      # # summary(bart.fit)
+      # pred.bart <- predict(bart.fit, as.data.frame(dat.tv[,-1]))
+      # predictions.tv[flds[[l]] ,j] <- pred.bart
+      # plot(dat.tv[,1], pred.bart ,  main = "bart")
+      # abline(a = 0, b = 1) 
+      # j <-j+1
+
+      
+      ####################################################
+      # set.seed(1951)        
+      # Ktrain <- kernelMatrix(kfunc, as.matrix(dat.tr[,2:ncol(dat.tr)]))
+      # Kvalid <- kernelMatrix(kfunc, as.matrix(dat.tv[,2:ncol(dat.tr)]), as.matrix(dat.tr[,2:ncol(dat.tr)]))
+      # kpcTrain <- kPCA(Ktrain)
       
       
       # plot the data projection on the principal components
       
       # pairs(cbind(dat.tr[,1], kpcTrain$KPCs[ , 1 : 6]), col = dat.tr$class)
-      kpcValid <- predict(kpcTrain, Kvalid)
+      # kpcValid <- predict(kpcTrain, Kvalid)
       # pairs(kpcTest[ , 1 : 6], col = dat.tv$class)
-      kpca.lm.fit <- lm(dat.tr[, 1]~  kpcTrain$KPCs[ , 1 : 6] )
+      # kpca.lm.fit <- lm(dat.tr[, 1]~  kpcTrain$KPCs[ , 1 : 6] )
       
-      kpca.pred <- cbind(rep(1,nrow(kpcValid)), kpcValid[ , 1 : 6]) %*% as.matrix(kpca.lm.fit$coef)
+      # kpca.pred <- cbind(rep(1,nrow(kpcValid)), kpcValid[ , 1 : 6]) %*% as.matrix(kpca.lm.fit$coef)
       # plot(dat.tv[,1], kpca.pred , col = as.numeric(dat.tv$class), main = "KPCs")
       # abline(0,1)
       
-      predictions.tv[flds[[l]] ,j] <- kpca.pred
-      j <- j+ 1
+      # predictions.tv[flds[[l]] ,j] <- kpca.pred
+      # j <- j+ 1
       
       
       ####################################################
-      set.seed(1951)
+      # set.seed(1951)
       
-      rf.kpc.fit <- ranger(y = dat.tr[, 1], x =  kpcTrain$KPCs[ , 1 : 6], importance = "impurity")
+      # rf.kpc.fit <- ranger(y = dat.tr[, 1], x =  kpcTrain$KPCs[ , 1 : 6], importance = "impurity")
       # plot(rf.fit$variable.importance)
-      pred.rf.kpc <- predict(rf.kpc.fit , data = kpcValid[ , 1 : 6])
-      predictions.tv[flds[[l]] ,j] <- pred.rf.kpc$predictions
-      j <- j+1
-      
+      # pred.rf.kpc <- predict(rf.kpc.fit , data = kpcValid[ , 1 : 6])
+      # predictions.tv[flds[[l]] ,j] <- pred.rf.kpc$predictions
+      # j <- j+1
+      # 
       
       ####################################################
-      set.seed(1951)        
-      rf.k.fit <- ranger(y = dat.tr[, 1], x =  Ktrain, importance = "impurity")
-      # plot(rf.fit$variable.importance)
-      pred.rf.k <- predict(rf.k.fit , data = Kvalid)
-      predictions.tv[flds[[l]] ,j] <- pred.rf.k$predictions
-      j <- j+1
+      # set.seed(1951)        
+      # rf.k.fit <- ranger(y = dat.tr[, 1], x =  Ktrain, importance = "impurity")
+      # # plot(rf.fit$variable.importance)
+      # pred.rf.k <- predict(rf.k.fit , data = Kvalid)
+      # predictions.tv[flds[[l]] ,j] <- pred.rf.k$predictions
+      # j <- j+1
       
       
       ####################################################
@@ -327,29 +343,37 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       pred.svm <- predict(svm.fit, dat.tv)
       predictions.tv[flds[[l]] ,j] <- pred.svm
       j <- j+1
-      # plot(dat.tv[,1], predYsvm,  main = "RF")
-      # abline(0,1)
+
+      # plot(dat.tv[,1], pred.svm ,  main = "svm")
+      # abline(a = 0, b = 1)
       
       
-      ####################################################
+      ###################################################
       set.seed(1951)
       ppr.fit <- ppr(dat.tr[,-1], dat.tr[, 1], nterms = 2, max.terms = 5)
       pred.ppr <- ppr.fit %>% predict(dat.tv[,-1])               
       
       predictions.tv[flds[[l]] ,j] <- pred.ppr
       j <- j+1
-      # plot(dat.tv[,1], pred.ppr,  main = "RF")
-      # abline(0,1)
+      plot(dat.tv[,1], pred.ppr,  main = "ppr")
+      abline(0,1)
       ####################################################
-      set.seed(1951)        
+      set.seed(1951)    
+      # start_time <- Sys.time()
       brnn.fit <- brnn(as.matrix(dat.tr[, -1]), dat.tr[, 1])
+      # end_time <- Sys.time()
+      # end_time - start_time
       ###prediction
       pred.brnn <- brnn.fit %>% predict(dat.tv[,-1])                          #predict y hat
       predictions.tv[flds[[l]] ,j] <- pred.brnn
       j <- j+1
-      # plot(dat.tv[,1], pred.brnn,  main = "BRNN")
-      # abline(0,1)
+      plot(dat.tv[,1], pred.brnn,  main = "BRNN")
+      abline(0,1)
       
+      # start_time <- Sys.time()
+      # 
+      # end_time <- Sys.time()
+      # end_time - start_time
       ####################################################
       set.seed(1951)       
       gbm.fit <- gbm(ys~., data = dat.tr, distribution = "gaussian", cv.folds = 5, n.trees = 200)
@@ -360,28 +384,35 @@ lasso.fit.SG <- vector(mode = "list", length = N)
       j <- j+1
       # plot(dat.tv[,1], pred.gbm,  main = "GBM")
       # abline(0,1)
-      
+      # 
+      print(l)
     }
-    
-    
-    colnames(predictions.tv) <- c("lasso", "elastic net", "pca", "pls",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm", "ppr", "brnn", "gbm")
+    # 
+    # save.image(file="temp2.RData")
+    # rm(list=ls())
+    # load(file="temp2.RData")
+    # source("Load_libraries.R")
+
+    # end_time <- Sys.time()
+    # end_time - start_time
+    colnames(predictions.tv) <- c("lasso", "elastic net", "pca", "pls",  "LM+15", "RF",  "svm", "ppr", "brnn", "gbm")
     # pairs(cbind(dat.tr.full[,1], predictions.tv)) # correlated predictions
     
     
     ####################################################
     set.seed(1951)    
-    lm.fit.SG[[i]][[yind]]<- lm(dat.tr.full[,1]~predictions.tv - 1) 
+    lm.fit.SG[[i]]<- lm(dat.tr.full[,1]~predictions.tv - 1) 
     ####################################################
     set.seed(1951)    
-    nonneg.fit.SG[[i]][[yind]] <- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = 0, lower.limits = 0, intercept = FALSE) 
+    nonneg.fit.SG[[i]] <- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = 0, lower.limits = 0, intercept = FALSE) 
     ####################################################
     set.seed(1951) 
-    rf.fit.SG[[i]][[yind]] <- ranger(y = dat.tr.full[, 1], x = cbind( predictions.tv, dat.tr.full[, -1]), importance = "impurity")
+    rf.fit.SG[[i]] <- ranger(y = dat.tr.full[, 1], x = cbind( predictions.tv, dat.tr.full[, -1]), importance = "impurity")
     ####################################################
     set.seed(1951)    
     cv.out <- cv.glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = grid,  intercept = FALSE)
     # plot(cv.out)
-    lasso.fit.SG[[i]][[yind]] <- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = cv.out$lambda.min,  intercept = FALSE)
+    lasso.fit.SG[[i]]<- glmnet(predictions.tv,dat.tr.full[,1],alpha=1, lambda = cv.out$lambda.min,  intercept = FALSE)
     
     # plot(coef(nonneg.fit.SG[[i]][[yind]]), coef(lasso.fit.SG[[i]][[yind]]))
     # sum(coef(lasso.fit.SG[[i]][[yind]]))
@@ -411,6 +442,7 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     j <- 1
     ####################################################
     set.seed(1951) 
+    # start_time <- Sys.time()
     x <- model.matrix(ys ~. , data = dat.tr.full)
     y1 <- dat.tr.full[,1]
     lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for lasso
@@ -425,10 +457,12 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     RMSE[i,j] <- calcRMSE(dat.te[,1], lasso.pred)
     predictions.te[,j] <- lasso.pred 
     j <- j + 1
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     #############################################
     
     set.seed(1951)   
+#     start_time <- Sys.time()
     en.fit <- glmnet(x,y1,alpha=0.5, lambda = grid) # for lasso
     
     # plot(lasso.fit)
@@ -444,40 +478,45 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     RMSE[i,j] <- calcRMSE(dat.te[,1], en.pred)
     predictions.te[,j] <- en.pred 
     j <- j + 1
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     ####################################################
     
-    set.seed(1951)    
+    set.seed(1951)  
+#     start_time <- Sys.time()
     pc <- prcomp(dat.tr.full[, 2:ncol(dat.tr.full)], scale = TRUE)
     
-    pca.lm.fit<- lm(dat.tr.full[, 1]~pc$x[,1:5])
+    pca.lm.fit<- lm(dat.tr.full[, 1]~pc$x[,1:100])
     
     x.te <- predict(pc, dat.te[, 2:ncol(dat.tr.full)])
     # pca.pred.poor <- as.matrix(cbind(rep(1, 20000), pc$x[,1:5])) %*% as.matrix(pca.lm.fit$coef[1:6])
-    pca.pred <- as.matrix(cbind(rep(1, nrow(x.te)), x.te[,1:5])) %*% as.matrix(pca.lm.fit$coef[1:6])
+    pca.pred <- as.matrix(cbind(rep(1, nrow(x.te)), x.te[,1:100])) %*% as.matrix(pca.lm.fit$coef[1:101])
     
     RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred)
     predictions.te[,j] <- pca.pred
     j <- j + 1
     # plot(dat.te[,1], pca.pred, col = as.numeric(dat.te$class), main = "PCA")
     # abline(a = 0, b = 1)
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     #############################################################
     
     set.seed(1951)   
+#     start_time <- Sys.time()
+    pls.fit <- plsr(ys ~., data=dat.tr.full, scale= TRUE, validation = "none")
     
-    pls.fit <- plsr(ys ~., data=dat.tr.full, scale= TRUE, validation = "CV")
     
-    
-    pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = pls.pc[yind])
+    pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 30)
     
     RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
     predictions.te[,j] <- pls.pred 
     j <- j+ 1
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     
     #############################################################
     set.seed(1951)     
+#     start_time <- Sys.time()
     lm.fit <- lm(dat.tr.full[, 1]~ as.matrix(dat.tr.full[, nonzy+1]) )
     x <- model.matrix(ys ~. , data = dat.te[, c(1, nonzy+1)])
     lm.pred <- x %*% as.matrix(lm.fit$coef)
@@ -486,11 +525,13 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     RMSE[i,j] <- calcRMSE(dat.te[,1], lm.pred)
     predictions.te[,j] <- lm.pred 
     j <- j+ 1
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     #############################################################
     
     
-    set.seed(1951)   
+    set.seed(1951) 
+#     start_time <- Sys.time()
     rf.fit <- ranger(ys ~ ., data = dat.tr.full, importance = "impurity")
     # plot(rf.fit$variable.importance)
     pred.rf <- predict(rf.fit , data = dat.te)
@@ -498,90 +539,93 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
     predictions.te[,j] <- pred.rf$predictions 
     j <- j+1
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     #############################################################
     
-    
-    set.seed(1951)   
-    
-    
-    rf.vs.fit <- ranger(ys ~ ., data = dat.tr.full, importance = "impurity",regularization.factor = 0.2, regularization.usedepth=FALSE)
-    # plot(rf.fit$variable.importance)
-    pred.rf.vs <- predict(rf.vs.fit , data = dat.te)
-    
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf.vs$predictions)
-    predictions.te[,j] <- pred.rf.vs$predictions
-    j <- j+1
-    # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class))
-    # abline(0,1)
-    
-    #############################################################
-    
-    
-    set.seed(1951)   
-    
-    
-    bart.fit <- bartMachine(as.data.frame(dat.tr.full[,-1]), dat.tr.full[,1], verbose = FALSE)
-    # summary(bart.fit)
-    pred.bart <- predict(bart.fit, as.data.frame(dat.te[,-1]))
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pred.bart)
-    predictions.te[,j] <- pred.bart
-    j <- j+1
-    # plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class), main = "BART")
-    # abline(0,1)
+    # 
+    # set.seed(1951)   
+    # 
+    # 
+    # rf.vs.fit <- ranger(ys ~ ., data = dat.tr.full, importance = "impurity",regularization.factor = 0.2, regularization.usedepth=FALSE)
+    # # plot(rf.fit$variable.importance)
+    # pred.rf.vs <- predict(rf.vs.fit , data = dat.te)
+    # 
+    # RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf.vs$predictions)
+    # predictions.te[,j] <- pred.rf.vs$predictions
+    # j <- j+1
+    # # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class))
+    # # abline(0,1)
     
     #############################################################
     
+    # 
+    # set.seed(1951)   
+    # 
+    # 
+    # bart.fit <- bartMachine(as.data.frame(dat.tr.full[,-1]), dat.tr.full[,1], verbose = FALSE)
+    # # summary(bart.fit)
+    # pred.bart <- predict(bart.fit, as.data.frame(dat.te[,-1]))
+    # RMSE[i,j] <- calcRMSE(dat.te[,1], pred.bart)
+    # predictions.te[,j] <- pred.bart
+    # j <- j+1
+    # # plot(dat.te[,1], pred.bart, col = as.numeric(dat.te$class), main = "BART")
+    # # abline(0,1)
     
-    set.seed(1951)   
-    
-    Ktrain <- kernelMatrix(kfunc, as.matrix(dat.tr.full[,2:ncol(dat.tr.full)]))
-    Ktest <- kernelMatrix(kfunc, as.matrix(dat.te[,2:ncol(dat.tr.full)]), as.matrix(dat.tr.full[,2:ncol(dat.tr.full)]))
-    kpcTrain <- kPCA(Ktrain)
+    #############################################################
     
     
-    # plot the data projection on the principal components
-    
-    # pairs(cbind(dat.tr.full[,1], kpcTrain$KPCs[ , 1 : 6]), col = dat.tr.full$class)
-    kpcTest <- predict(kpcTrain, Ktest)
-    # pairs(kpcTest[ , 1 : 6], col = dat.te$class)
-    kpca.lm.fit <- lm(dat.tr.full[, 1]~  kpcTrain$KPCs[ , 1 : 6] )
-    
-    kpca.pred <- cbind(rep(1,nrow(kpcTest)), kpcTest[ , 1 : 6]) %*% as.matrix(kpca.lm.fit$coef)
+    # set.seed(1951)   
+    # 
+    # Ktrain <- kernelMatrix(kfunc, as.matrix(dat.tr.full[,2:ncol(dat.tr.full)]))
+    # Ktest <- kernelMatrix(kfunc, as.matrix(dat.te[,2:ncol(dat.tr.full)]), as.matrix(dat.tr.full[,2:ncol(dat.tr.full)]))
+    # kpcTrain <- kPCA(Ktrain)
+    # 
+    # 
+    # # plot the data projection on the principal components
+    # 
+    # # pairs(cbind(dat.tr.full[,1], kpcTrain$KPCs[ , 1 : 6]), col = dat.tr.full$class)
+    # kpcTest <- predict(kpcTrain, Ktest)
+    # # pairs(kpcTest[ , 1 : 6], col = dat.te$class)
+    # kpca.lm.fit <- lm(dat.tr.full[, 1]~  kpcTrain$KPCs[ , 1 : 6] )
+    # 
+    # kpca.pred <- cbind(rep(1,nrow(kpcTest)), kpcTest[ , 1 : 6]) %*% as.matrix(kpca.lm.fit$coef)
     # plot(dat.te[,1], kpca.pred , col = as.numeric(dat.te$class), main = "KPCs")
     # abline(0,1)
     
     
-    RMSE[i,j] <- calcRMSE(dat.te[,1], kpca.pred)
-    predictions.te[,j] <- kpca.pred
-    j <- j+ 1
+    # RMSE[i,j] <- calcRMSE(dat.te[,1], kpca.pred)
+    # predictions.te[,j] <- kpca.pred
+    # j <- j+ 1
     
     
     
     #############################################################
-    set.seed(1951)   
-    
-    rf.kpca.fit <- ranger(y = dat.tr.full[, 1], x =  kpcTrain$KPCs[ , 1 : 6], importance = "impurity")
-    # plot(rf.fit$variable.importance)
-    pred.rf.kpca <- predict(rf.kpca.fit , data = kpcTest[ , 1 : 6])
-    
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf.kpca$predictions)
-    predictions.te[,j] <- pred.rf.kpca$predictions
-    j <- j+1
+    # set.seed(1951)   
+    # 
+    # rf.kpca.fit <- ranger(y = dat.tr.full[, 1], x =  kpcTrain$KPCs[ , 1 : 6], importance = "impurity")
+    # # plot(rf.fit$variable.importance)
+    # pred.rf.kpca <- predict(rf.kpca.fit , data = kpcTest[ , 1 : 6])
+    # 
+    # RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf.kpca$predictions)
+    # predictions.te[,j] <- pred.rf.kpca$predictions
+    # j <- j+1
     
     #############################################################
-    set.seed(1951)    
-    
-    rf.k.fit <- ranger(y = dat.tr.full[, 1], x =  Ktrain, importance = "impurity")
-    # plot(rf.fit$variable.importance)
-    pred.rf.k <- predict(rf.k.fit , data = Ktest)
-    
-    RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf.k$predictions)
-    predictions.te[,j] <- pred.rf.k$predictions
-    j <- j+1
+    # set.seed(1951)    
+    # 
+    # rf.k.fit <- ranger(y = dat.tr.full[, 1], x =  Ktrain, importance = "impurity")
+    # # plot(rf.fit$variable.importance)
+    # pred.rf.k <- predict(rf.k.fit , data = Ktest)
+    # 
+    # RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf.k$predictions)
+    # predictions.te[,j] <- pred.rf.k$predictions
+    # j <- j+1
     
     
     #############################################################
     set.seed(1951) 
+#     start_time <- Sys.time()
     svm.fit <- svm(ys~.,dat.tr.full)
     
     #Predict using SVM regression
@@ -591,19 +635,24 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     j <- j+1
     # plot(dat.te[,1], pred.svm,  main = "RF")
     # abline(0,1)
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     
     
     #############################################################
     set.seed(1951) 
+# #     start_time <- Sys.time()
     ppr.fit <- ppr(dat.tr.full[, -1], dat.tr.full[, 1], nterms = 2, max.terms = 5)
     pred.ppr <- ppr.fit %>% predict(dat.te[, -1])              
     RMSE[i,j] <- calcRMSE(dat.te[,1], pred.ppr)
     predictions.te[,j] <- pred.ppr
     j <- j + 1
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     
     #############################################################
     set.seed(1951)    
+#     start_time <- Sys.time()
     brnn.fit <- brnn(as.matrix(dat.tr.full[,-1]), dat.tr.full[, 1])
     pred.brnn <- brnn.fit %>% predict(dat.te[, -1])                        
     RMSE[i,j] <- calcRMSE(dat.te[,1], pred.brnn)
@@ -611,9 +660,11 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     j <- j + 1
     # plot(dat.tv[,1], pred.brnn,  main = "BRNN")
     # abline(0,1)
-    
+#    end_time <- Sys.time()
+    #   print(end_time - start_time)
     #############################################################
-    set.seed(1951)     
+    set.seed(1951)
+#     start_time <- Sys.time()
     gbm.fit <- gbm(
       ys ~ .,
       data = dat.tr.full,
@@ -629,46 +680,51 @@ lasso.fit.SG <- vector(mode = "list", length = N)
     j <- j + 1
     # plot(dat.tv[,1], pred.gbm,  main = "GBM")
     # abline(0,1)
+   # end_time <- Sys.time()
+   #   print(end_time - start_time)
+    RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions.te[, 1:10]))
     
-    RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions.te[, 1:15]))
     
-    
-    colnames(predictions.te) <- c("lasso", "elastic net", "pca", "pls",  "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm", "ppr", "brnn", "gbm")
+    colnames(predictions.te) <- c("lasso", "elastic net", "pca", "pls",  "LM+15", "RF", "svm", "ppr", "brnn", "gbm")
     # pairs(predictions.te)
     
     
-    pred.stack.lm <- as.matrix(predictions.te) %*% as.matrix(lm.fit.SG[[i]][[yind]]$coef)
+    pred.stack.lm <- as.matrix(predictions.te) %*% as.matrix(lm.fit.SG[[i]]$coef)
     
-    pred.stack.nonneg <- predict(nonneg.fit.SG[[i]][[yind]], predictions.te)
+    pred.stack.nonneg <- predict(nonneg.fit.SG[[i]], predictions.te)
     
     
-    pred.stack.rf <- predict(rf.fit.SG[[i]][[yind]], data = cbind(predictions.te, dat.te[, -1]))$prediction
+    pred.stack.rf <- predict(rf.fit.SG[[i]], data = cbind(predictions.te, dat.te[, -1]))$prediction
     
-    pred.stack.lasso <- predict(lasso.fit.SG[[i]][[yind]], predictions.te)
+    pred.stack.lasso <- predict(lasso.fit.SG[[i]], predictions.te)
     # plot(pred.stack.nonneg, pred.stack.lm)
     
-    
+    print(i)
     RMSE[i,j+1] <- calcRMSE(dat.te[,1],  pred.stack.lm)
     RMSE[i,j+2] <- calcRMSE(dat.te[,1],  pred.stack.nonneg)
     RMSE[i,j+3] <- calcRMSE(dat.te[,1],  pred.stack.rf)
     RMSE[i,j+4] <- calcRMSE(dat.te[,1],  pred.stack.lasso)
   }
+end_time <- Sys.time()
+end_time - start_time 
+
+save.image(file="First2.RData")
+save(RMSE, file="1st2.RData")
+  colnames(RMSE) <- c("lasso", "elastic net", "pca", "pls", "LM+15", "RF",  "svm", "ppr", "brnn", "gbm", "ensamble MA",  "ensLM",  "ensNonNeg", "ensRF", "enslasso")
   
-  colnames(RMSE) <- c("lasso", "elastic net", "pca", "pls", "LM+15", "RF", "RF+VS", "Bart", "kPCA","RF+kPCA", "RF+kernel", "svm", "ppr", "brnn", "gbm", "ensamble MA",  "ensLM",  "ensNonNeg", "ensRF", "enslasso")
+  RMSEFULL <- RMSE
   
-  RMSEFULL[[yind]] <- RMSE
-  
-  RMSE1 <- RMSE %>% as.data.frame() %>% mutate(split = as.factor(1:N)) %>% pivot_longer(1:20,"ALGORITHM")
+  RMSE1 <- RMSE %>% as.data.frame() %>% mutate(split = as.factor(1:N)) %>% pivot_longer(1:15,"ALGORITHM")
   # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
   
   p1 <- RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split)) +
     geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + theme(legend.position = "none")+
-    ylab("RMSE")+ ggtitle(names(ys_tr)[yind])+
+    ylab("RMSE")+ ggtitle("Large data set")+
     theme(axis.text.x=element_text(angle = 90, hjust = 0.5, vjust = 0.5))
   
   print(p1)
   
-  t1[[yind]] <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
+  t1 <- RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) %>% arrange(desc(meanv))
   
-}ß
+
 
