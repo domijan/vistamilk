@@ -21,8 +21,8 @@ library(bartMachine)
 library(e1071)
 library(BKPC)
 library(kernlab)
-tr <- read.csv("tr.csv") 
-te <- read.csv("te.csv") 
+tr <- read.csv("data/tr.csv") 
+te <- read.csv("data/te.csv") 
 
 calcRMSE <- function(y, yhat){sqrt(mean((yhat - y)^2))}
 
