@@ -429,7 +429,7 @@ for (i in 1:N){
   grid <- 10^seq(-3, 3, length = 100)
 
 
-
+  test.exp <- exp(dat.te[,1])
 
   lasso.fit <- glmnet(x,y1,alpha=1, lambda = grid) # for
   cv.out <- cv.glmnet(x,y1,alpha=1)
@@ -440,8 +440,10 @@ for (i in 1:N){
 
 
 
-  lasso.pred <- predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te[, -1062]))
-  RMSE[i,j] <- calcRMSE(dat.te[,1], lasso.pred)
+  lasso.pred <- (predict(lasso.fit, newx = model.matrix(V1 ~. , data = dat.te[, -1062])))
+  # plot((test.exp), (lasso.pred))
+  # abline(a = 0, b = 1)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(lasso.pred))
   predictions[,j] <- lasso.pred
   j <- j + 1
 
@@ -461,7 +463,7 @@ for (i in 1:N){
 
   pca.pred.poor.te <- as.matrix(cbind(rep(1, nrow(x.te)), x.te[,1:5])) %*% as.matrix(lmfit$coef[1:6])
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pca.pred.poor.te))
   predictions[,j] <- pca.pred.poor.te
   j <- j + 1
 
@@ -471,19 +473,19 @@ for (i in 1:N){
 
   pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 3)
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pls.pred))
   predictions[,j] <- pls.pred
   j <- j+ 1
 
   pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 4)
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pls.pred))
   predictions[,j] <- pls.pred
   j <- j+ 1
 
   pls.pred <- predict(pls.fit, dat.te[,-1], ncomp = 5)
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pls.pred)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pls.pred))
   predictions[,j] <- pls.pred
   j <- j+ 1
 
@@ -498,7 +500,7 @@ for (i in 1:N){
 
 
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pca.pred.poor.te))
   predictions[,j] <- pca.pred.poor.te
   j <- j+ 1
 
@@ -509,7 +511,7 @@ for (i in 1:N){
 
   pred.rf <- predict(rf.fit , data = dat.te)
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pred.rf$predictions))
   predictions[,j] <- pred.rf$predictions
   j <- j+1
 
@@ -519,7 +521,7 @@ for (i in 1:N){
   # plot(rf.fit$variable.importance)
   pred.rf <- predict(rf.fit , data = dat.te)
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pred.rf$predictions))
   predictions[,j] <- pred.rf$predictions
   j <- j+1
 
@@ -529,7 +531,7 @@ for (i in 1:N){
   bart_machine = bartMachine(as.data.frame(dat.tr[,-1]), dat.tr[,1], verbose = FALSE)
   # summary(bart_machine)
   pred.bart <- predict(bart_machine, as.data.frame(dat.te[,-1]))
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.bart)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pred.bart))
   predictions[,j] <- pred.bart
   j <-j+1
 
@@ -552,11 +554,11 @@ for (i in 1:N){
 
 
   pca.pred.poor.te <- cbind(rep(1,nrow(KPCpred3)), KPCpred3[ , 1 : 6]) %*% as.matrix(lmfit$coef)
-  # plot(dat.te[,1], pca.pred.poor.te , col = as.numeric(dat.te$class), main = "KPCs")
+  # plot(test.exp, pca.pred.poor.te , col = as.numeric(dat.te$class), main = "KPCs")
   # abline(0,1)
 
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pca.pred.poor.te))
   predictions[,j] <- pca.pred.poor.te
   j <- j+ 1
 
@@ -567,7 +569,7 @@ for (i in 1:N){
   # plot(rf.fit$variable.importance)
   pred.rf <- predict(rf.fit , data = KPCpred3[ , 1 : 6])
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pred.rf$predictions))
   predictions[,j] <- pred.rf$predictions
   j <- j+1
 
@@ -577,10 +579,10 @@ for (i in 1:N){
   # plot(rf.fit$variable.importance)
   pred.rf <- predict(rf.fit , data = Ktest2)
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pred.rf$predictions))
   predictions[,j] <- pred.rf$predictions
   j <- j+1
-  # plot(dat.te[,1], pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
+  # plot(test.exp, pred.rf$predictions, col = as.numeric(dat.te$class), main = "RF")
   # abline(0,1)
 
 
@@ -588,21 +590,22 @@ for (i in 1:N){
 
   #Predict using SVM regression
   predYsvm = predict(modelsvm, dat.te[, -1062])
-  RMSE[i,j] <- calcRMSE(dat.te[,1], predYsvm)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(predYsvm))
   predictions[,j] <- predYsvm
   j <- j+1
-  # plot(dat.te[,1], predYsvm, col = as.numeric(dat.te$class), main = "RF")
+  # plot(test.exp, predYsvm, col = as.numeric(dat.te$class), main = "RF")
   # abline(0,1)
   rf.fit <- ranger(y = dat.tr[, 1], x =  cbind(kpcKern2$KPCs[ , 1 : 6], dat.tr$class), importance = "impurity")
   # plot(rf.fit$variable.importance)
   pred.rf <- predict(rf.fit , data = cbind(KPCpred3[ , 1 : 6], dat.te$class))
 
-  RMSE[i,j] <- calcRMSE(dat.te[,1], pred.rf$predictions)
+  RMSE[i,j] <- calcRMSE(test.exp, exp(pred.rf$predictions))
   predictions[,j] <- pred.rf$predictions
   j <- j+1
 
-
-  RMSE[i,j] <-  calcRMSE(dat.te[,1],   rowMeans(predictions[, 1:13]))
+# plot(test.exp,   rowMeans(predictions[, 1:13]))
+# abline(a=0, b=1)  
+RMSE[i,j] <-  calcRMSE(test.exp,   exp(rowMeans(predictions[, 1:13])))
 }
 
 
@@ -621,13 +624,11 @@ colnames(RMSE) <- c("lasso", "lm+pca", "pls3", "pls4","pls5",  "lm+15", "rf", "r
 
 RMSE2 <- RMSE  %>%as.data.frame()%>% mutate(split = as.factor(1:N))%>% pivot_longer(1:15,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
+RMSE2 %>% filter(ALGORITHM!="ensamble") %>% filter(ALGORITHM!="lasso")%>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = split, group = split))+
   geom_point()+ geom_line() +geom_line(aes(x = ALGORITHM, y = meanv), col = 1)+ theme(legend.position = "none")+
   ylab("RMSE")
 
-t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv=sd(value)) 
-
-%>% arrange(desc(meanv))
+t2 <- RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value, na.rm=TRUE)*10, sdv=sd(value)) %>% arrange(desc(meanv))
 #
 #
 #
