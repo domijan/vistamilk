@@ -50,7 +50,7 @@ Following algorithms were used for regression:
 The algorithms were tuned using further cross-validation of the training sets. 
 
 Finally, an ensemble model was used: averages taken over predictions in test sets from the models described above.
-The predictive ability of the algorithms was evaluated based on RMSE. The best scoring algorithms over the 50 random splits for all three traits was the ensamble model. The predictions of this model trained over the entire training set  were submitted to the competition. 
+The predictive ability of the algorithms was evaluated based on RMSE. The best scoring algorithms over the 50 random splits for all three traits was the ensemble model. The predictions of this model trained over the entire training set  were submitted to the competition. 
 
 
 
