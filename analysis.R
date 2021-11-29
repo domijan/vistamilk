@@ -8,8 +8,8 @@ library(bartMachine)
 library(e1071)
 library(BKPC)
 library(kernlab)
-tr <- read.csv("tr.csv") 
-te <- read.csv("te.csv") 
+tr <- read.csv("data/tr.csv") 
+te <- read.csv("data/te.csv") 
 
 calcRMSE <- function(y, yhat){sqrt(mean((yhat - y)^2))}
 
@@ -343,14 +343,6 @@ for (i in 1:N){
   RMSE[i,j] <- calcRMSE(dat.te[,1], pca.pred.poor.te)
   predictions[,j] <- pca.pred.poor.te 
   j <- j+ 1
-  # lmfit <- lm(V1~ wave_530+ wave_170+wave_134+wave_141+wave_162+
-  #             wave_193+wave_221+wave_719+wave_493+wave_596+
-  #             wave_602+wave_656+wave_662+wave_688+wave_713, data = dat.tr)
-  # library(condvis2)
-  # condvis(dat.tr, lmfit,  response = "V1", sectionvars="wave_530", 
-  #         conditionvars=c("wave_170", "wave_134", "wave_141", "wave_162",
-  #                         "wave_193", "wave_221", "wave_719", "wave_493", "wave_596",
-  #                         "wave_602", "wave_656", "wave_662", "wave_688", "wave_713"), pointColor= "class")
   
   #############################################################
   
