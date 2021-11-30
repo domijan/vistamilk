@@ -228,6 +228,7 @@ for (i in 1:N) {
   
   lasso.pred <-
     predict(lasso.fit, newx = model.matrix(V1 ~ . , data = dat.te[,-1062]))
+  
   RMSE[i, j] <- calcRMSE(dat.te[, 1], lasso.pred)
   predictions[, j] <- lasso.pred
   j <- j + 1
@@ -493,61 +494,99 @@ colnames(RMSE) <-
     "kernelRF",
     "svm",
     "kpcaClassRF",
-    "ensamble"
+    "ensemble"
   )
 
 #############################################################
 
 
 RMSE1 <-
-  RMSE  %>% as.data.frame() %>% mutate(split = as.factor(1:N)) %>% pivot_longer(1:15, "ALGORITHM")
+  RMSE  %>% 
+  as.data.frame() %>% 
+  mutate(split = as.factor(1:N)) %>% 
+  pivot_longer(1:15, "ALGORITHM")
+
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-RMSE1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(
+
+RMSE1 %>% 
+  group_by(ALGORITHM) %>% 
+  mutate(meanv = mean(value)) %>% 
+  ggplot(aes(
   x = ALGORITHM,
   y = value,
   color = split,
   group = split
 )) +
-  geom_point() + geom_line() + geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + theme(legend.position = "none") +
+  geom_point() + 
+  geom_line() + 
+  geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + 
+  theme(legend.position = "none") +
   ylab("RMSE")
 
 t1 <-
-  RMSE1 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv =
-                                                sd(value)) %>% arrange(desc(meanv))
+  RMSE1 %>% 
+  group_by(ALGORITHM) %>% 
+  summarise(meanv = mean(value), sdv = sd(value)) %>% 
+  arrange(desc(meanv))
 
 
 RMSE2 <-
-  RMSE  %>% as.data.frame() %>% mutate(split = as.factor(1:N)) %>% pivot_longer(1:15, "ALGORITHM")
+  RMSE  %>% 
+  as.data.frame() %>% 
+  mutate(split = as.factor(1:N)) %>% 
+  pivot_longer(1:15, "ALGORITHM")
+
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-RMSE2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(
+RMSE2 %>% 
+  group_by(ALGORITHM) %>% 
+  mutate(meanv = mean(value)) %>% 
+  ggplot(aes(
   x = ALGORITHM,
   y = value,
   color = split,
   group = split
 )) +
-  geom_point() + geom_line() + geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + theme(legend.position = "none") +
+  geom_point() + 
+  geom_line() + 
+  geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + 
+  theme(legend.position = "none") +
   ylab("RMSE")
 
 t2 <-
-  RMSE2 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv =
-                                                sd(value)) %>% arrange(desc(meanv))
+  RMSE2 %>% 
+  group_by(ALGORITHM) %>% 
+  summarise(meanv = mean(value), sdv = sd(value)) %>% 
+  arrange(desc(meanv))
 
 
 RMSE3 <-
-  RMSE  %>% as.data.frame() %>% mutate(split = as.factor(1:N)) %>% pivot_longer(1:15, "ALGORITHM")
+  RMSE  %>% 
+  as.data.frame() %>% 
+  mutate(split = as.factor(1:N)) %>% 
+  pivot_longer(1:15, "ALGORITHM")
+
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-RMSE3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(
+
+RMSE3 %>% 
+  group_by(ALGORITHM) %>% 
+  mutate(meanv = mean(value)) %>% 
+  ggplot(aes(
   x = ALGORITHM,
   y = value,
   color = split,
   group = split
 )) +
-  geom_point() + geom_line() + geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + theme(legend.position = "none") +
+  geom_point() + 
+  geom_line() + 
+  geom_line(aes(x = ALGORITHM, y = meanv), col = 1) + 
+  theme(legend.position = "none") +
   ylab("RMSE")
 
 t3 <-
-  RMSE3 %>% group_by(ALGORITHM) %>% summarise(meanv = mean(value), sdv =
-                                                sd(value)) %>% arrange(desc(meanv))
+  RMSE3 %>% 
+  group_by(ALGORITHM) %>% 
+  summarise(meanv = mean(value), sdv = sd(value)) %>% 
+  arrange(desc(meanv))
 
 
 # USE RESULTS FROM ENSEMBLE
@@ -793,16 +832,24 @@ colnames(predictions) <-
     "kpcaRF",
     "kernelRF",
     "svm",
-    "ensamble"
+    "ensemble"
   )
 
 
 #############################################################
 
-predictions1 <- predictions  %>%as.data.frame()%>% mutate(obs = as.factor(1:nrow(te)))%>% pivot_longer(1:14,"ALGORITHM")
+predictions1 <- predictions  %>%
+  as.data.frame() %>% 
+  mutate(obs = as.factor(1:nrow(te))) %>% 
+  pivot_longer(1:14,"ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-predictions1 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
-  geom_point()+ geom_line()+ theme(legend.position = "none")+
+predictions1 %>%  
+  group_by(ALGORITHM) %>% 
+  mutate(meanv = mean(value)) %>% 
+  ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs)) +
+  geom_point() + 
+  geom_line() + 
+  theme(legend.position = "none") +
   ylab("predictions")
 
 summary(y1)
@@ -812,10 +859,19 @@ write.csv(predictions[,14], "kappa_casein.csv", row.names = FALSE, col.names = F
 
 
 
-predictions2 <- predictions  %>%as.data.frame()%>% mutate(obs = as.factor(1:nrow(te)))%>% pivot_longer(1:14,"ALGORITHM")
+predictions2 <- predictions  %>%
+  as.data.frame() %>% 
+  mutate(obs = as.factor(1:nrow(te))) %>% 
+  pivot_longer(1:14,"ALGORITHM")
+
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
-predictions2 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs))+
-  geom_point()+ geom_line()+ theme(legend.position = "none")+
+predictions2 %>% 
+  group_by(ALGORITHM) %>% 
+  mutate(meanv = mean(value)) %>% 
+  ggplot(aes(x= ALGORITHM, y = value, color = obs, group = obs)) +
+  geom_point() + 
+  geom_line() + 
+  theme(legend.position = "none") +
   ylab("predictions")
 
 summary(exp(predictions))
@@ -825,8 +881,10 @@ write.csv(exp(predictions[,14]), "Casein_micelle_size.csv", row.names = FALSE, c
 
 
 
-predictions3 <-
-  predictions  %>% as.data.frame() %>% mutate(obs = as.factor(1:nrow(te))) %>% pivot_longer(1:14, "ALGORITHM")
+predictions3 <- predictions %>% 
+  as.data.frame() %>% 
+  mutate(obs = as.factor(1:nrow(te))) %>% 
+  pivot_longer(1:14, "ALGORITHM")
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 predictions3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(aes(
   x = ALGORITHM,
@@ -834,7 +892,9 @@ predictions3 %>% group_by(ALGORITHM) %>% mutate(meanv = mean(value)) %>% ggplot(
   color = obs,
   group = obs
 )) +
-  geom_point() + geom_line() + theme(legend.position = "none") +
+  geom_point() + 
+  geom_line() + 
+  theme(legend.position = "none") +
   ylab("predictions")
 
 summary((predictions))
