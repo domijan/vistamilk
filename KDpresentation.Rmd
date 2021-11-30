@@ -25,6 +25,7 @@ library(kernlab)
 tr <- read.csv("data/tr.csv") 
 te <- read.csv("data/te.csv") 
 
+
 calcRMSE <- function(y, yhat){sqrt(mean((yhat - y)^2))}
 
 
@@ -559,8 +560,8 @@ RMSE2 <- RMSE  %>%
 # RMSE1 %>% ggplot(aes(x = ALGORITHM, y = value)) + geom_boxplot()
 
 RMSE2 %>% 
-  filter(ALGORITHM!="ensemble") %>%
-  filter(ALGORITHM!="lasso") %>% 
+  # filter(ALGORITHM!="ensemble") %>%
+  # filter(ALGORITHM!="lasso") %>% 
   group_by(ALGORITHM) %>% 
   mutate(meanv = mean(value)) %>% 
   ggplot(aes(x= ALGORITHM, y = value, color = split, group = split)) +
